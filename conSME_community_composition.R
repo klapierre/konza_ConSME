@@ -88,30 +88,72 @@ commMetrics <- community_structure(relCover, time.var='year', abundance.var='rel
   mutate(plot=as.integer(plot))%>%
   left_join(trt)
 
+
 ##### richness response #####
-summary(richModel <- lme(richness~watershed*trt*year,
-                               data=commMetrics,
+summary(richModel <- lme(richness~watershed*year*invertebrates*bison + watershed*year*invertebrates*small_mammal,
+                               data=subset(commMetrics, year>2018),
                                random=~1|block/trt,
                                correlation=corCompSymm(form=~year|block/trt), 
                                control=lmeControl(returnObject=T)))
 anova.lme(richModel, type='sequential') 
 emmeans(richModel, pairwise~year*trt, adjust="tukey")
 
-#figure - richness by year
-ggplot(data=barGraphStats(data=commMetrics, variable="richness", byFactorNames=c("trt", "year")), aes(x=trt, y=mean)) +
+#figure - richness by watershed, year, bison
+ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="richness", byFactorNames=c("bison", "year", 'watershed')), aes(x=bison, y=mean)) +
   geom_bar(position=position_dodge(0.1), size=2, stat="identity", color='black', fill='white') +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.1), size=2) +
-  ylab(expression(paste('Total Biomass (g m'^'-2',')'))) +
-  scale_x_discrete(limits=c('BSI', 'BSX', 'XSI', 'XXI', 'XSX', 'XXX')) +
-  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30, angle=90), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
+  ylab(expression(paste('Plant Species Richness'))) +
+  # scale_x_discrete(limits=c('BSI', 'BSX', 'XSI', 'XXI', 'XSX', 'XXX')) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
   # coord_cartesian(ylim=c(0,750)) +
-  facet_grid(cols=vars(year))
+  facet_grid(cols=vars(year), rows=vars(watershed))
+#export at 1400x600
+
+#response ratios 
+commMetricsMeans <- commMetrics%>%
+  group_by(watershed, year, bison)%>%
+  summarise(richness_mean=mean(richness), sd=sd(richness), N=length(richness))%>%
+  ungroup()%>%
+  mutate(se=sd/sqrt(N))
+
+#figure - richness by watershed, year, bison
+ggplot(data=subset(commMetricsMean, year>2018), aes(x=as.factor(year), y=richness_mean, color=bison)) +
+  geom_point(size=2) +
+  geom_smooth(method='lm') +
+  geom_errorbar(aes(ymin=richness_mean-se, ymax=richness_mean+se), width=.1) +
+  ylab(expression(paste('Plant Species Richness'))) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
+  # coord_cartesian(ylim=c(0,750)) +
+  facet_grid(rows=vars(watershed))
 #export at 1400x600
 
 
+commMetricsRR <- commMetrics%>%
+  group_by(watershed, block, year, bison)%>%
+  summarise(richness_mean=mean(richness))%>%
+  ungroup()%>%
+  pivot_wider(names_from='bison', values_from='richness_mean')%>%
+  mutate(richness_percent_loss=100*(B-X)/B)
 
+temp <- commMetricsRR%>%
+  group_by(watershed, year)%>%
+  summarise(richness_mean_bison=mean(B), richness_mean_X=mean(X))%>%
+  ungroup()
+
+ggplot(data=barGraphStats(data=subset(commMetricsRR, year>2018), variable="richness_percent_loss", byFactorNames=c("year", 'watershed')), aes(x=as.factor(year), y=mean)) +
+  geom_point(size=5) +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=2) +
+  ylab('Plant Species Richness Loss (%)') +
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
+  # coord_cartesian(ylim=c(0,50)) +
+  geom_hline(yintercept=0) +
+  facet_grid(rows=vars(watershed))
+#export at 1400x600
+  
+  
+  
 ##### evenness response #####
-summary(evarModel <- lme(Evar~watershed*trt*year,
+summary(evarModel <- lme(Evar~watershed*year*invertebrates*bison + watershed*year*invertebrates*small_mammal,
                          data=subset(commMetrics, year>2018),
                          random=~1|block/trt,
                          correlation=corCompSymm(form=~year|block/trt), 
@@ -119,22 +161,27 @@ summary(evarModel <- lme(Evar~watershed*trt*year,
 anova.lme(evarModel, type='sequential') 
 emmeans(evarModel, pairwise~year*trt*watershed, adjust="tukey")
 
-anova.lme(evarModel <- lme(Evar~trt,
-                           data=subset(commMetrics, year==2021 & watershed=='N4B'),
-                           random=~1|block/trt))
-emmeans(evarModel, pairwise~trt, adjust="tukey")
-
-#figure - evenness by year
-ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="Evar", byFactorNames=c("trt", "year", "watershed")), aes(x=trt, y=mean)) +
-  geom_bar(position=position_dodge(0.1), size=2, stat="identity", color='black', fill='white') +
+#figure - evenness by small mammal and inverts
+ggplot(data=barGraphStats(data=subset(commMetrics, year>2018 & !(trt %in% c('BSI', 'BSX'))), variable="Evar", byFactorNames=c("trt")), aes(x=trt, y=mean)) +
+  geom_point(position=position_dodge(0.1), size=5, stat="identity", color='black', fill='white') +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.1), size=2) +
   ylab(expression(paste('Evenness'))) +
-  scale_x_discrete(limits=c('BSI', 'BSX', 'XSI', 'XXI', 'XSX', 'XXX')) +
-  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30, angle=90), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
-  coord_cartesian(ylim=c(0,0.55)) +
-  facet_grid(cols=vars(year), rows=vars(watershed))
+  scale_x_discrete(limits=c('XSI', 'XXI', 'XSX', 'XXX')) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30, angle=90), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) #+
+  # coord_cartesian(ylim=c(0,0.55)) +
+  # facet_grid(cols=vars(year), rows=vars(watershed))
 #export at 1400x1200
 
+# #figure - evenness by bison
+# ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="Evar", byFactorNames=c("bison", "watershed", "year")), aes(x=year, y=mean, color=bison)) +
+#   geom_point(position=position_dodge(0.1), size=5, stat="identity", color='black', fill='white') +
+#   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.1), size=2) +
+#   ylab(expression(paste('Evenness'))) +
+#   # scale_x_discrete(limits=c('XSI', 'XXI', 'XSX', 'XXX')) +
+#   theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30, angle=90), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
+# # coord_cartesian(ylim=c(0,0.55)) +
+# facet_grid(rows=vars(watershed))
+# #export at 1400x1200
 
 
 ##### community difference #####
@@ -148,22 +195,23 @@ ggplot(data=subset(commDiff, year>2018), aes(x=year, y=composition_diff, color=t
 
 ##### PERMANOVA #####
 relCover2021 <- relCover%>%
-  select(year, replicate, trt, genus_species, rel_cover)%>%
+  mutate(bison_ws=paste(bison, watershed, sep='::'))%>%
+  select(year, bison_ws, watershed, replicate, trt, bison, small_mammal, invertebrates, genus_species, rel_cover)%>%
   pivot_wider(names_from='genus_species', values_from='rel_cover', values_fill=list(rel_cover=0))%>%
   filter(year==2021)
 
-print(permanova <- adonis2(formula = relCover2021[,4:183]~trt, data=relCover2021, permutations=999, method="bray"))
-#F=3.487, df=5,104, p=0.001
+print(permanova <- adonis2(formula = relCover2021[,9:188]~watershed*bison*invertebrates+watershed*small_mammal*invertebrates, data=relCover2021, permutations=999, method="bray"))
+#watershed*bison F=1.88, df=1,104, p=0.067; bison F=14.47, df=1,104, p=0.001
 
 #betadisper
-veg <- vegdist(relCover2021[,4:183], method = "bray")
-dispersion <- betadisper(veg, relCover2021$trt)
+veg <- vegdist(relCover2021[,9:188], method = "bray")
+dispersion <- betadisper(veg, relCover2021$bison)
 permutest(dispersion, pairwise=TRUE, permutations=999) 
-#F=3.982, df=5,99, p=0.005
+#F=11.037, df=1,103, p=0.004
 
-sppBC <- metaMDS(relCover2021[,4:183])
+sppBC <- metaMDS(relCover2021[,9:188])
 
-plotData <- relCover2021[,2:3]
+plotData <- relCover2021[,1:8]
 
 #Use the vegan ellipse function to make ellipses
 veganCovEllipse<-function (cov, center = c(0, 0), scale = 1, npoints = 100)
@@ -173,15 +221,15 @@ veganCovEllipse<-function (cov, center = c(0, 0), scale = 1, npoints = 100)
   t(center + scale * t(Circle %*% chol(cov)))
 }
 
-BC_NMDS = data.frame(MDS1 = sppBC$points[,1], MDS2 = sppBC$points[,2],group=relCover2021$trt)
+BC_NMDS = data.frame(MDS1 = sppBC$points[,1], MDS2 = sppBC$points[,2],group=relCover2021$bison_ws)
 BC_NMDS_Graph <- cbind(plotData,BC_NMDS)
-BC_Ord_Ellipses<-ordiellipse(sppBC, plotData$trt, display = "sites",
+BC_Ord_Ellipses<-ordiellipse(sppBC, plotData$bison_ws, display = "sites",
                              kind = "se", conf = 0.95, label = T)               
 
 ord3 <- data.frame(plotData,scores(sppBC,display="sites"))%>%
-  group_by(trt)
+  group_by(bison_ws)
 
-BC_Ord_Ellipses<-ordiellipse(sppBC, plotData$trt, display = "sites",
+BC_Ord_Ellipses<-ordiellipse(sppBC, plotData$bison_ws, display = "sites",
                              kind = "se", conf = 0.95, label = T)
 BC_Ellipses <- data.frame() #Make a new empty data frame called BC_Ellipses  
 for(g in unique(BC_NMDS$group)){
@@ -203,7 +251,7 @@ ggplot(BC_NMDS_Graph, aes(x=MDS1, y=MDS2, color=group,linetype = group, shape = 
 
 
 ##### simper #####
-print(sim <- with(relCover2021, simper(relCover2021[,4:183], trt)))
+print(sim <- with(relCover2021, simper(relCover2021[,9:188], trt)))
 
 
 ##### trends for dominant species #####
@@ -244,10 +292,72 @@ ggplot(barGraphStats(data=subset(relCover, genus_species=='oxalis_violacea' & ye
 
 
 
-#spp turnover?
+#RACs
+rankAbundance <- relCover%>%
+  filter(year==2021)%>%
+  mutate(spp_name=str_to_sentence(paste(genus, species, sep=' ')))%>%
+  group_by(watershed, bison, spp_name, growthform, lifeform)%>%
+  summarize(avg_cover=mean(rel_cover))%>%
+  ungroup()%>%
+  arrange(bison, watershed, -avg_cover)%>%
+  mutate(bison_ws=paste(bison, watershed, sep='::'))%>%
+  group_by(bison_ws)%>%
+  mutate(rank=seq_along(bison_ws))%>%
+  ungroup()%>%
+  mutate(lifeform2=ifelse(spp_name=='Sisyrinchium campestre', 'f', ifelse(lifeform=='o', 'f', ifelse(lifeform=='s', 'g', as.character(lifeform)))))%>%
+  filter(spp_name!='NA NA')
 
+ggplot(data=subset(rankAbundance, bison_ws=='B::N1A', avg_cover>0), aes(x=rank, y=avg_cover)) +
+  geom_line() +
+  geom_point(aes(colour=lifeform2, shape=growthform), size=3) +
+  scale_color_manual(labels=c("Forb", "Graminoid", "Woody"), values=c('#DE8C00', '#009CC0', '#83431E')) +
+  scale_shape_discrete(labels=c("Annual", "Biennial", "Perennial"))+
+  xlab('') +
+  ylab('N1A Bison\nRelative Percent Cover\n') +
+  # scale_x_continuous(expand=c(0,0), limits=c(0.5,17), breaks=seq(0,17,5)) +
+  # scale_y_continuous(expand=c(0,0), limits=c(0,60), breaks=seq(0,60,10)) +
+  # geom_text(aes(y=avg_cover+1.2, x=rank+0.1, label=spp_name), hjust='left', vjust='center', angle=90, size=4) +
+  expand_limits(y=30, x=90)
+#export at 1400x400
 
+ggplot(data=subset(rankAbundance, bison_ws=='X::N1A', avg_cover>0), aes(x=rank, y=avg_cover)) +
+  geom_line() +
+  geom_point(aes(colour=lifeform2, shape=growthform), size=3) +
+  scale_color_manual(labels=c("Forb", "Graminoid", "Woody"), values=c('#DE8C00', '#009CC0', '#83431E')) +
+  scale_shape_discrete(labels=c("Annual", "Biennial", "Perennial"))+
+  xlab('') +
+  ylab('N1A Bison Removed\nRelative Percent Cover\n') +
+  # scale_x_continuous(expand=c(0,0), limits=c(0.5,17), breaks=seq(0,17,5)) +
+  # scale_y_continuous(expand=c(0,0), limits=c(0,60), breaks=seq(0,60,10)) +
+  # geom_text(aes(y=avg_cover+1.2, x=rank+0.1, label=spp_name), hjust='left', vjust='center', angle=90, size=4) +
+  expand_limits(y=30, x=90)
+#export at 1400x400
 
+ggplot(data=subset(rankAbundance, bison_ws=='B::N4B', avg_cover>0), aes(x=rank, y=avg_cover)) +
+  geom_line() +
+  geom_point(aes(colour=lifeform2, shape=growthform), size=3) +
+  scale_color_manual(labels=c("Forb", "Graminoid", "Woody"), values=c('#DE8C00', '#009CC0', '#83431E')) +
+  scale_shape_discrete(labels=c("Annual", "Biennial", "Perennial"))+
+  xlab('') +
+  ylab('N4B Bison\nRelative Percent Cover\n') +
+  # scale_x_continuous(expand=c(0,0), limits=c(0.5,17), breaks=seq(0,17,5)) +
+  # scale_y_continuous(expand=c(0,0), limits=c(0,60), breaks=seq(0,60,10)) +
+  # geom_text(aes(y=avg_cover+1.2, x=rank+0.1, label=spp_name), hjust='left', vjust='center', angle=90, size=4) +
+  expand_limits(y=40, x=90)
+#export at 1400x400
+
+ggplot(data=subset(rankAbundance, bison_ws=='X::N4B', avg_cover>0), aes(x=rank, y=avg_cover)) +
+  geom_line() +
+  geom_point(aes(colour=lifeform2, shape=growthform), size=3) +
+  scale_color_manual(labels=c("Forb", "Graminoid", "Woody"), values=c('#DE8C00', '#009CC0', '#83431E')) +
+  scale_shape_discrete(labels=c("Annual", "Biennial", "Perennial"))+
+  xlab('') +
+  ylab('N4B Bison Removed\nRelative Percent Cover\n') +
+  # scale_x_continuous(expand=c(0,0), limits=c(0.5,17), breaks=seq(0,17,5)) +
+  # scale_y_continuous(expand=c(0,0), limits=c(0,60), breaks=seq(0,60,10)) +
+  # geom_text(aes(y=avg_cover+1.2, x=rank+0.1, label=spp_name), hjust='left', vjust='center', angle=90, size=4) +
+  expand_limits(y=40, x=90)
+#export at 1400x400
 
 
 
