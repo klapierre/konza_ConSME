@@ -49,7 +49,7 @@ barGraphStats <- function(data, variable, byFactorNames) {
 
 
 ##### data #####
-trt <- read.csv('C:\\Users\\komatsuk\\Dropbox (Smithsonian)\\konza projects\\conSME\\data\\conSME_treatments.csv')
+trt <- read.csv('C:\\Users\\lapie\\Dropbox (Smithsonian)\\konza projects\\conSME\\data\\conSME_treatments.csv')
 
 sp2018 <- read.csv('ConSME_species composition_2018.csv')
 sp2019 <- read.csv('ConSME_species composition_2019.csv')
@@ -117,7 +117,7 @@ commMetricsMeans <- commMetrics%>%
   mutate(se=sd/sqrt(N))
 
 #figure - richness by watershed, year, bison
-ggplot(data=subset(commMetricsMean, year>2018), aes(x=as.factor(year), y=richness_mean, color=bison)) +
+ggplot(data=subset(commMetricsMeans, year>2018), aes(x=as.factor(year), y=richness_mean, color=bison)) +
   geom_point(size=2) +
   geom_smooth(method='lm') +
   geom_errorbar(aes(ymin=richness_mean-se, ymax=richness_mean+se), width=.1) +
@@ -140,10 +140,10 @@ temp <- commMetricsRR%>%
   summarise(richness_mean_bison=mean(B), richness_mean_X=mean(X))%>%
   ungroup()
 
-ggplot(data=barGraphStats(data=subset(commMetricsRR, year>2018), variable="richness_percent_loss", byFactorNames=c("year", 'watershed')), aes(x=as.factor(year), y=mean)) +
+ggplot(data=barGraphStats(data=subset(commMetricsRR, year>2018), variable="richness_percent_loss", byFactorNames=c("year", 'watershed')), aes(x=as.factor(year), y=-(mean))) +
   geom_point(size=5) +
-  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=2) +
-  ylab('Plant Species Richness Loss (%)') +
+  geom_errorbar(aes(ymin=(-mean-se), ymax=(-mean+se)), width=.1, size=2) +
+  ylab('Plant Species Richness Response (%)') +
   theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
   # coord_cartesian(ylim=c(0,50)) +
   geom_hline(yintercept=0) +
