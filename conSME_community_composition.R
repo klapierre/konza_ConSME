@@ -11,8 +11,7 @@ library(emmeans)
 library(vegan)
 library(tidyverse)
 
-setwd('C:\\Users\\lapie\\Dropbox (Smithsonian)\\konza projects\\conSME\\data\\species composition') #laptop
-setwd('C:\\Users\\komatsuk\\Dropbox (Smithsonian)\\konza projects\\conSME\\data\\species composition') #desktop
+setwd('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\data') #desktop
 
 
 ##### functions #####
@@ -49,20 +48,20 @@ barGraphStats <- function(data, variable, byFactorNames) {
 
 
 ##### data #####
-trt <- read.csv('C:\\Users\\lapie\\Dropbox (Smithsonian)\\konza projects\\conSME\\data\\conSME_treatments.csv')
+trt <- read.csv('conSME_treatments.csv')
 
-sp2018 <- read.csv('ConSME_species composition_2018.csv')
-sp2019 <- read.csv('ConSME_species composition_2019.csv')
-sp2020 <- read.csv('ConSME_species composition_2020.csv')%>%
+sp2018 <- read.csv('species composition\\ConSME_species composition_2018.csv')
+sp2019 <- read.csv('species composition\\ConSME_species composition_2019.csv')
+sp2020 <- read.csv('species composition\\ConSME_species composition_2020.csv')%>%
   select(-X, -taxa)
-sp2021 <- read.csv('ConSME_species composition_2021.csv')%>%
+sp2021 <- read.csv('species composition\\ConSME_species composition_2021.csv')%>%
   select(-taxa, -flw_cover, -flw_number)
 
 spAll <- rbind(sp2018,sp2019,sp2020,sp2021)%>%
   group_by(year, watershed, block, plot, sppnum)%>%
   summarise(max_cover=max(cover))%>%
   ungroup()%>%
-  left_join(read.csv('PPS011_new KNZ spp list.csv'))%>%
+  left_join(read.csv('species composition\\PPS011_new KNZ spp list.csv'))%>%
   filter(gen %notin% c('litter', 'rock', 'dung', 'bare_ground', 'bison_trail'))%>%
   mutate(genus_species=paste(genus, species, sep='_'))
 
@@ -108,6 +107,18 @@ ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="richnes
   # coord_cartesian(ylim=c(0,750)) +
   facet_grid(cols=vars(year), rows=vars(watershed))
 #export at 1400x600
+
+#figure - richness by watershed, year, invertebrates
+ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="richness", byFactorNames=c("invertebrates")), aes(x=invertebrates, y=mean)) +
+  geom_bar(position=position_dodge(0.1), size=2, stat="identity", color='black', fill='white') +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.1), size=2) +
+  ylab(expression(paste('Plant Species Richness'))) +
+  # scale_x_discrete(limits=c('BSI', 'BSX', 'XSI', 'XXI', 'XSX', 'XXX')) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) #+
+  # coord_cartesian(ylim=c(0,750)) +
+  # facet_grid(cols=vars(year), rows=vars(watershed))
+#export at 1400x600
+
 
 #response ratios 
 commMetricsMeans <- commMetrics%>%
