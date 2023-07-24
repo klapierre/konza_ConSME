@@ -11,7 +11,7 @@ library(emmeans)
 library(vegan)
 library(tidyverse)
 
-setwd('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\data') #desktop
+setwd('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\data')
 
 
 ##### functions #####
@@ -52,79 +52,91 @@ trt <- read.csv('conSME_treatments.csv')
 
 sp2018 <- read.csv('species composition\\ConSME_species composition_2018.csv')
 sp2019 <- read.csv('species composition\\ConSME_species composition_2019.csv')
-sp2020 <- read.csv('species composition\\ConSME_species composition_2020.csv')%>%
+sp2020 <- read.csv('species composition\\ConSME_species composition_2020.csv') %>%
   select(-X, -taxa)
-sp2021 <- read.csv('species composition\\ConSME_species composition_2021.csv')%>%
+sp2021 <- read.csv('species composition\\ConSME_species composition_2021.csv') %>%
   select(-taxa, -flw_cover, -flw_number)
+sp2022 <- read.csv('species composition\\ConSME_species composition_2022.csv') %>% 
+  select(-taxa) %>% 
+  filter(!(is.na(cover)))
 
-spAll <- rbind(sp2018,sp2019,sp2020,sp2021)%>%
-  group_by(year, watershed, block, plot, sppnum)%>%
-  summarise(max_cover=max(cover))%>%
-  ungroup()%>%
-  left_join(read.csv('species composition\\PPS011_new KNZ spp list.csv'))%>%
-  filter(gen %notin% c('litter', 'rock', 'dung', 'bare_ground', 'bison_trail'))%>%
+spAll <- rbind(sp2018,sp2019,sp2020,sp2021,sp2022) %>%
+  group_by(year, watershed, block, plot, sppnum) %>%
+  summarise(max_cover=max(cover)) %>%
+  ungroup() %>%
+  left_join(read.csv('species composition\\PPS011_new KNZ spp list.csv')) %>%
+  filter(gen %notin% c('litter', 'rock', 'dung', 'bare_ground', 'bison_trail')) %>%
   mutate(genus_species=paste(genus, species, sep='_'))
 
 
 ##### relative cover #####
-totCover <- spAll%>%
-  group_by(year, watershed, block, plot)%>%
-  summarise(total_cover=sum(max_cover))%>% #calculate total cover
+totCover <- spAll %>%
+  group_by(year, watershed, block, plot) %>%
+  summarise(total_cover=sum(max_cover)) %>% #calculate total cover
   ungroup()
 
-relCover <- spAll%>%
-  left_join(totCover)%>%
-  mutate(rel_cover=100*(max_cover/total_cover))%>% #calculate relative cover
-  select(-total_cover)%>%
-  mutate(replicate=paste(watershed, block, plot, sep='::'))%>%
-  left_join(trt)%>%
+relCover <- spAll %>%
+  left_join(totCover) %>%
+  mutate(rel_cover=100*(max_cover/total_cover)) %>% #calculate relative cover
+  select(-total_cover) %>%
+  mutate(replicate=paste(watershed, block, plot, sep='::')) %>%
+  left_join(trt) %>%
   filter(!is.na(sppnum)) #remove 5 entries that were unknowns
 
 
 ##### community metrics #####
-commMetrics <- community_structure(relCover, time.var='year', abundance.var='rel_cover', replicate.var='replicate')%>%
-  separate(replicate, into=c('watershed', 'block', 'plot'), sep='::')%>%
-  mutate(plot=as.integer(plot))%>%
+commMetrics <- community_structure(relCover, time.var='year', abundance.var='rel_cover', replicate.var='replicate') %>%
+  separate(replicate, into=c('watershed', 'block', 'plot'), sep='::') %>%
+  mutate(plot=as.integer(plot)) %>%
   left_join(trt)
+
+hist(log(commMetrics$richness))
+shapiro.test(log(commMetrics$richness))
+# W = 0.99191, p-value = 0.00514
+
+hist(log(commMetrics$Evar))
+shapiro.test(log(commMetrics$Evar))
+# W = 0.99836, p-value = 0.9
 
 
 ##### richness response #####
-summary(richModel <- lme(richness~watershed*year*invertebrates*bison + watershed*year*invertebrates*small_mammal,
+summary(richModel <- lme(log(richness)~watershed*year*invertebrates*bison + watershed*year*invertebrates*small_mammal,
                                data=subset(commMetrics, year>2018),
                                random=~1|block/trt,
                                correlation=corCompSymm(form=~year|block/trt), 
                                control=lmeControl(returnObject=T)))
 anova.lme(richModel, type='sequential') 
-emmeans(richModel, pairwise~year*trt, adjust="tukey")
+emmeans(richModel, pairwise~year*watershed*bison, adjust="tukey")
+emmeans(richModel, pairwise~invertebrates, adjust="tukey")
 
-#figure - richness by watershed, year, bison
-ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="richness", byFactorNames=c("bison", "year", 'watershed')), aes(x=bison, y=mean)) +
-  geom_bar(position=position_dodge(0.1), size=2, stat="identity", color='black', fill='white') +
-  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.1), size=2) +
+#figure - richness by watershed, bison
+ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="richness", byFactorNames=c("bison", 'watershed')), aes(x=watershed, y=mean, fill=bison)) +
+  geom_bar(position=position_dodge(0.9), size=2, stat="identity", color='black') +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.9), size=2) +
   ylab(expression(paste('Plant Species Richness'))) +
-  # scale_x_discrete(limits=c('BSI', 'BSX', 'XSI', 'XXI', 'XSX', 'XXX')) +
-  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
-  # coord_cartesian(ylim=c(0,750)) +
-  facet_grid(cols=vars(year), rows=vars(watershed))
-#export at 1400x600
+  coord_cartesian(ylim=c(0,30)) +
+  scale_fill_manual(values=c('lightgrey', 'limegreen')) +
+  scale_x_discrete(labels=c('Annual', '4 Year')) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=35), axis.title.y=element_text(size=35, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=35), legend.position=c(0.98, 0.98), legend.justification=c(1,1), strip.text=element_text(size=35), legend.text=element_text(size=35)) 
+# ggsave('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\figures\\2023\\bison_richness.png', width=7, height=7, units='in', dpi=600, bg='white')
 
-#figure - richness by watershed, year, invertebrates
-ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="richness", byFactorNames=c("invertebrates")), aes(x=invertebrates, y=mean)) +
-  geom_bar(position=position_dodge(0.1), size=2, stat="identity", color='black', fill='white') +
+
+#figure - richness by invertebrates
+ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="richness", byFactorNames=c("invertebrates")), aes(x=invertebrates, y=mean, fill=invertebrates)) +
+  geom_bar(position=position_dodge(0.1), size=2, stat="identity", color='black') +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.1), size=2) +
+  coord_cartesian(ylim=c(0,23)) +
   ylab(expression(paste('Plant Species Richness'))) +
-  # scale_x_discrete(limits=c('BSI', 'BSX', 'XSI', 'XXI', 'XSX', 'XXX')) +
-  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) #+
-  # coord_cartesian(ylim=c(0,750)) +
-  # facet_grid(cols=vars(year), rows=vars(watershed))
-#export at 1400x600
+  scale_fill_manual(values=c('lightgrey', 'lightgoldenrod')) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=35), axis.title.y=element_text(size=35, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=35), legend.position='none', legend.justification=c(0,1), strip.text=element_text(size=35))
+# ggsave('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\figures\\2023\\invert_richness.png', width=4, height=7, units='in', dpi=600, bg='white')
 
 
 #response ratios 
-commMetricsMeans <- commMetrics%>%
-  group_by(watershed, year, bison)%>%
-  summarise(richness_mean=mean(richness), sd=sd(richness), N=length(richness))%>%
-  ungroup()%>%
+commMetricsMeans <- commMetrics %>%
+  group_by(watershed, year, bison) %>%
+  summarise(richness_mean=mean(richness), sd=sd(richness), N=length(richness)) %>%
+  ungroup() %>%
   mutate(se=sd/sqrt(N))
 
 #figure - richness by watershed, year, bison
@@ -139,16 +151,16 @@ ggplot(data=subset(commMetricsMeans, year>2018), aes(x=as.factor(year), y=richne
 #export at 1400x600
 
 
-commMetricsRR <- commMetrics%>%
-  group_by(watershed, block, year, bison)%>%
-  summarise(richness_mean=mean(richness))%>%
-  ungroup()%>%
-  pivot_wider(names_from='bison', values_from='richness_mean')%>%
+commMetricsRR <- commMetrics %>%
+  group_by(watershed, block, year, bison) %>%
+  summarise(richness_mean=mean(richness)) %>%
+  ungroup() %>%
+  pivot_wider(names_from='bison', values_from='richness_mean') %>%
   mutate(richness_percent_loss=100*(B-X)/B)
 
-temp <- commMetricsRR%>%
-  group_by(watershed, year)%>%
-  summarise(richness_mean_bison=mean(B), richness_mean_X=mean(X))%>%
+temp <- commMetricsRR %>%
+  group_by(watershed, year) %>%
+  summarise(richness_mean_bison=mean(B), richness_mean_X=mean(X)) %>%
   ungroup()
 
 ggplot(data=barGraphStats(data=subset(commMetricsRR, year>2018), variable="richness_percent_loss", byFactorNames=c("year", 'watershed')), aes(x=as.factor(year), y=-(mean))) +
@@ -164,7 +176,7 @@ ggplot(data=barGraphStats(data=subset(commMetricsRR, year>2018), variable="richn
   
   
 ##### evenness response #####
-summary(evarModel <- lme(Evar~watershed*year*invertebrates*bison + watershed*year*invertebrates*small_mammal,
+summary(evarModel <- lme(log(Evar)~watershed*year*invertebrates*bison + watershed*year*invertebrates*small_mammal,
                          data=subset(commMetrics, year>2018),
                          random=~1|block/trt,
                          correlation=corCompSymm(form=~year|block/trt), 
@@ -173,11 +185,11 @@ anova.lme(evarModel, type='sequential')
 emmeans(evarModel, pairwise~year*trt*watershed, adjust="tukey")
 
 #figure - evenness by small mammal and inverts
-ggplot(data=barGraphStats(data=subset(commMetrics, year>2018 & !(trt %in% c('BSI', 'BSX'))), variable="Evar", byFactorNames=c("trt")), aes(x=trt, y=mean)) +
+ggplot(data=barGraphStats(data=subset(commMetrics, year>2018 & trt %in% c('XSI', 'XSX', 'XXI', 'XXX')), variable="Evar", byFactorNames=c("small_mammal")), aes(x=small_mammal, y=mean)) +
   geom_point(position=position_dodge(0.1), size=5, stat="identity", color='black', fill='white') +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.1), size=2) +
   ylab(expression(paste('Evenness'))) +
-  scale_x_discrete(limits=c('XSI', 'XXI', 'XSX', 'XXX')) +
+  # scale_x_discrete(limits=c('XSI', 'XXI', 'XSX', 'XXX')) +
   theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30, angle=90), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) #+
   # coord_cartesian(ylim=c(0,0.55)) +
   # facet_grid(cols=vars(year), rows=vars(watershed))
@@ -201,28 +213,47 @@ commDiff <- multivariate_difference(df=relCover, time.var='year', species.var='g
 ggplot(data=subset(commDiff, year>2018), aes(x=year, y=composition_diff, color=trt2)) +
   geom_point() +
   geom_smooth(method='lm', formula=y~poly(x,2), se=F)
+# bison removal overwhelms all community change
 
+
+#looking at just insect effects with bison
+commDiffBison <- multivariate_difference(df=subset(relCover, trt %in% c('BSX', 'BSI')), time.var='year', species.var='genus_species', abundance.var='rel_cover', replicate.var='replicate', treatment.var='trt', reference.treatment='BSI')
+
+ggplot(data=subset(commDiffBison, year>2018), aes(x=year, y=composition_diff, color=trt2)) +
+  geom_point() +
+  geom_smooth(method='lm', formula=y~poly(x,2), se=F)
+# effect in 2021, but goes away in 2022
+
+
+#looking at effects without bison
+commDiffNoBison <- multivariate_difference(df=subset(relCover, !(trt %in% c('BSX', 'BSI'))), time.var='year', species.var='genus_species', abundance.var='rel_cover', replicate.var='replicate', treatment.var='trt', reference.treatment='XSI')
+
+ggplot(data=subset(commDiffNoBison, year>2018), aes(x=year, y=composition_diff, color=trt2)) +
+  geom_point() +
+  geom_smooth(method='lm', formula=y~poly(x,2), se=F)
+# insects create community change
 
 
 ##### PERMANOVA #####
-relCover2021 <- relCover%>%
-  mutate(bison_ws=paste(bison, watershed, sep='::'))%>%
-  select(year, bison_ws, watershed, replicate, trt, bison, small_mammal, invertebrates, genus_species, rel_cover)%>%
-  pivot_wider(names_from='genus_species', values_from='rel_cover', values_fill=list(rel_cover=0))%>%
-  filter(year==2021)
+relCover2022 <- relCover %>%
+  # filter(bison=='X') %>% 
+  mutate(bison_ws=paste(bison, watershed, sep='::')) %>% 
+  select(year, watershed, replicate, trt, bison_ws, bison, small_mammal, invertebrates, genus_species, rel_cover) %>%
+  pivot_wider(names_from='genus_species', values_from='rel_cover', values_fill=list(rel_cover=0)) %>%
+  filter(year==2022)
 
-print(permanova <- adonis2(formula = relCover2021[,9:188]~watershed*bison*invertebrates+watershed*small_mammal*invertebrates, data=relCover2021, permutations=999, method="bray"))
+print(permanova <- adonis2(formula = relCover2022[,9:194]~watershed*bison*small_mammal*invertebrates, data=relCover2022, permutations=999, method="bray"))
 #watershed*bison F=1.88, df=1,104, p=0.067; bison F=14.47, df=1,104, p=0.001
 
 #betadisper
-veg <- vegdist(relCover2021[,9:188], method = "bray")
-dispersion <- betadisper(veg, relCover2021$bison)
+veg <- vegdist(relCover2022[,9:194], method = "bray")
+dispersion <- betadisper(veg, relCover2022$invertebrates)
 permutest(dispersion, pairwise=TRUE, permutations=999) 
-#F=11.037, df=1,103, p=0.004
+#F=1.4561, p=0.226
 
-sppBC <- metaMDS(relCover2021[,9:188])
+sppBC <- metaMDS(relCover2022[,9:194])
 
-plotData <- relCover2021[,1:8]
+plotData <- relCover2022[,1:8]
 
 #Use the vegan ellipse function to make ellipses
 veganCovEllipse<-function (cov, center = c(0, 0), scale = 1, npoints = 100)
@@ -232,12 +263,12 @@ veganCovEllipse<-function (cov, center = c(0, 0), scale = 1, npoints = 100)
   t(center + scale * t(Circle %*% chol(cov)))
 }
 
-BC_NMDS = data.frame(MDS1 = sppBC$points[,1], MDS2 = sppBC$points[,2],group=relCover2021$bison_ws)
+BC_NMDS = data.frame(MDS1 = sppBC$points[,1], MDS2 = sppBC$points[,2],group=relCover2022$bison_ws)
 BC_NMDS_Graph <- cbind(plotData,BC_NMDS)
 BC_Ord_Ellipses<-ordiellipse(sppBC, plotData$bison_ws, display = "sites",
                              kind = "se", conf = 0.95, label = T)               
 
-ord3 <- data.frame(plotData,scores(sppBC,display="sites"))%>%
+ord3 <- data.frame(plotData,scores(sppBC,display="sites")) %>%
   group_by(bison_ws)
 
 BC_Ord_Ellipses<-ordiellipse(sppBC, plotData$bison_ws, display = "sites",
@@ -262,38 +293,43 @@ ggplot(BC_NMDS_Graph, aes(x=MDS1, y=MDS2, color=group,linetype = group, shape = 
 
 
 ##### simper #####
-print(sim <- with(relCover2021, simper(relCover2021[,9:188], trt)))
+print(sim <- with(relCover2022, simper(relCover2022[,7:172], trt)))
 
 
 ##### trends for dominant species #####
-ggplot(barGraphStats(data=subset(relCover, genus_species=='andropogon_gerardii' & year>2018), variable="max_cover", byFactorNames=c("year", "trt", "watershed")), aes(x=year, y=mean, color=trt)) +
+#bison effect
+ggplot(barGraphStats(data=subset(relCover, genus_species=='andropogon_gerardii' & year>2018), variable="max_cover", byFactorNames=c("year", "bison", "watershed")), aes(x=year, y=mean, color=bison)) +
   geom_point(size=3) +
   geom_smooth(method='lm', formula=y~poly(x,2), se=F) +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.1) +
   ylab('Andropogon gerardii cover') +
   facet_wrap(~watershed)
 
-ggplot(barGraphStats(data=subset(relCover, genus_species=='bouteloua_curtipendula' & year>2018), variable="max_cover", byFactorNames=c("year", "trt", "watershed")), aes(x=year, y=mean, color=trt)) +
+#bison effect in 4 yr
+ggplot(barGraphStats(data=subset(relCover, genus_species=='bouteloua_curtipendula' & year>2018), variable="max_cover", byFactorNames=c("year", "bison", "watershed")), aes(x=year, y=mean, color=bison)) +
   geom_point(size=3) +
   geom_smooth(method='lm', formula=y~poly(x,2), se=F) +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.1) +
   ylab('Bouteloua curtipendula cover') +
   facet_wrap(~watershed)
 
-ggplot(barGraphStats(data=subset(relCover, genus_species=='lespedeza_violacea' & year>2018), variable="max_cover", byFactorNames=c("year", "trt", "watershed")), aes(x=year, y=mean, color=trt)) +
+#invert effect
+ggplot(barGraphStats(data=subset(relCover, genus_species=='lespedeza_violacea' & year>2018), variable="max_cover", byFactorNames=c("year", "invertebrates", "watershed")), aes(x=year, y=mean, color=invertebrates)) +
   geom_point(size=3) +
   geom_smooth(method='lm', formula=y~poly(x,2), se=F) +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.1) +
   ylab('Lespedeza violacea cover') +
   facet_wrap(~watershed)
 
-ggplot(barGraphStats(data=subset(relCover, genus_species=='ambrosia_psilostachya' & year>2018), variable="max_cover", byFactorNames=c("year", "trt", "watershed")), aes(x=year, y=mean, color=trt)) +
+#bison effect
+ggplot(barGraphStats(data=subset(relCover, genus_species=='ambrosia_psilostachya' & year>2018), variable="max_cover", byFactorNames=c("year", "bison", "watershed")), aes(x=year, y=mean, color=bison)) +
   geom_point(size=3) +
   geom_smooth(method='lm', formula=y~poly(x,2), se=F) +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.1) +
   ylab('Ambrosia psilostachya cover') +
   facet_wrap(~watershed)
 
+# ??? who is driving this sp?
 ggplot(barGraphStats(data=subset(relCover, genus_species=='oxalis_violacea' & year>2018), variable="max_cover", byFactorNames=c("year", "trt", "watershed")), aes(x=year, y=mean, color=trt)) +
   geom_point(size=3) +
   geom_smooth(method='lm', formula=y~poly(x,2), se=F) +
@@ -304,18 +340,18 @@ ggplot(barGraphStats(data=subset(relCover, genus_species=='oxalis_violacea' & ye
 
 
 #RACs
-rankAbundance <- relCover%>%
-  filter(year==2021)%>%
-  mutate(spp_name=str_to_sentence(paste(genus, species, sep=' ')))%>%
-  group_by(watershed, bison, spp_name, growthform, lifeform)%>%
-  summarize(avg_cover=mean(rel_cover))%>%
-  ungroup()%>%
-  arrange(bison, watershed, -avg_cover)%>%
-  mutate(bison_ws=paste(bison, watershed, sep='::'))%>%
-  group_by(bison_ws)%>%
-  mutate(rank=seq_along(bison_ws))%>%
-  ungroup()%>%
-  mutate(lifeform2=ifelse(spp_name=='Sisyrinchium campestre', 'f', ifelse(lifeform=='o', 'f', ifelse(lifeform=='s', 'g', as.character(lifeform)))))%>%
+rankAbundance <- relCover %>%
+  filter(year==2021) %>%
+  mutate(spp_name=str_to_sentence(paste(genus, species, sep=' '))) %>%
+  group_by(watershed, bison, spp_name, growthform, lifeform) %>%
+  summarize(avg_cover=mean(rel_cover)) %>%
+  ungroup() %>%
+  arrange(bison, watershed, -avg_cover) %>%
+  mutate(bison_ws=paste(bison, watershed, sep='::')) %>%
+  group_by(bison_ws) %>%
+  mutate(rank=seq_along(bison_ws)) %>%
+  ungroup() %>%
+  mutate(lifeform2=ifelse(spp_name=='Sisyrinchium campestre', 'f', ifelse(lifeform=='o', 'f', ifelse(lifeform=='s', 'g', as.character(lifeform))))) %>%
   filter(spp_name!='NA NA')
 
 ggplot(data=subset(rankAbundance, bison_ws=='B::N1A', avg_cover>0), aes(x=rank, y=avg_cover)) +
@@ -393,27 +429,27 @@ ggplot(data=subset(rankAbundance, bison_ws=='X::N4B', avg_cover>0), aes(x=rank, 
 
 # #finding the most frequent species across all plots and years for updating the datasheets
 # freq <- spAll%>%
-#   mutate(genus_species=paste(genus,species, sep='_'))%>%
-#   filter(max_cover>0, genus_species!='NA_NA')%>%
-#   group_by(watershed, block, plot, sppnum, genus_species, lifeform)%>%
-#   summarize(cover=mean(max_cover))%>%
-#   ungroup()%>%
-#   group_by(sppnum, genus_species, lifeform, watershed)%>%
-#   summarise(freq=length(genus_species))%>%
-#   ungroup()%>%
+#   mutate(genus_species=paste(genus,species, sep='_')) %>%
+#   filter(max_cover>0, genus_species!='NA_NA') %>%
+#   group_by(watershed, block, plot, sppnum, genus_species, lifeform) %>%
+#   summarize(cover=mean(max_cover)) %>%
+#   ungroup() %>%
+#   group_by(sppnum, genus_species, lifeform, watershed) %>%
+#   summarise(freq=length(genus_species)) %>%
+#   ungroup() %>%
 #   spread(key=watershed, value=freq)
 # 
 # # write.csv(freq, 'species_frequency_2018-2019.csv', row.names=F)
 # 
 # #finding the most frequent species across all plots and years for updating the datasheets
 # abund <- spAll%>%
-#   mutate(genus_species=paste(genus,species, sep='_'))%>%
-#   group_by(watershed, block, plot, sppnum, genus_species, lifeform)%>%
-#   summarize(cover=mean(max_cover))%>%
-#   ungroup()%>%
-#   filter(cover>0, genus_species!='NA_NA')%>%
-#   group_by(sppnum, genus_species, lifeform, watershed)%>%
-#   summarise(freq=length(genus_species), avg_cover=mean(cover))%>%
+#   mutate(genus_species=paste(genus,species, sep='_')) %>%
+#   group_by(watershed, block, plot, sppnum, genus_species, lifeform) %>%
+#   summarize(cover=mean(max_cover)) %>%
+#   ungroup() %>%
+#   filter(cover>0, genus_species!='NA_NA') %>%
+#   group_by(sppnum, genus_species, lifeform, watershed) %>%
+#   summarise(freq=length(genus_species), avg_cover=mean(cover)) %>%
 #   ungroup()
 # 
 # # write.csv(abund, 'conSME_species_dominance_2018-2019.csv', row.names=F)
