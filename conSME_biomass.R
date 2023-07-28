@@ -57,10 +57,12 @@ biomass2021 <- read.csv('biomass\\conSME_biomass_2021.csv') %>%
   rename(gram=grass) %>%
   select(-date) %>%
   filter(notes!='no biomass in any bag') #filter out missing sample
-biomass2022 <- read.csv('biomass\\conSME_biomass_2022.csv') %>%
+biomass2022 <- read.csv('biomass\\conSME_biomass_2022_corrected.csv') %>%
   mutate(experiment='conSME') %>%
   rename(gram=grass) %>%
-  filter(!is.na(gram)) #filter out missing samples
+  filter(!is.na(strip)) %>% 
+  mutate(year=2022) %>% 
+  select(year, experiment, watershed, block, plot, strip, gram, forb, woody, pdead, notes)
 
 
 biomass <- rbind(biomass2019, biomass2020, biomass2021, biomass2022) %>%
@@ -68,12 +70,14 @@ biomass <- rbind(biomass2019, biomass2020, biomass2021, biomass2022) %>%
   left_join(trt) %>%
   select(-notes) %>%
   mutate_all(~replace(., is.na(.), 0)) %>% #don't be scared by the errors, they just don't add NAs to the factor columns (watershed, trt, etc)
+  mutate(gram=10*gram, forb=10*forb, woody=10*woody) %>% 
   mutate(total=gram+forb+woody) %>%
-  ungroup() %>% mutate(ws_label=ifelse(watershed=='N1A', 'Annual', '4 Year'))
+  ungroup() %>% 
+  mutate(ws_label=ifelse(watershed=='N1A', 'Annual', '4 Year'))
 
 biomassMean <- biomass %>%
   group_by(watershed, ws_label, block, plot, year, bison, small_mammal, invertebrates, trt) %>%
-  summarise(gram=mean(gram)*10, forb=mean(forb)*10, woody=mean(woody)*10, pdead=mean(pdead)*10, total=mean(total)*10)
+  summarise(gram=mean(gram), forb=mean(forb), woody=mean(woody), pdead=mean(pdead), total=mean(total))
 
 #subsetting out the first year of trts, which is different in patterns from all subsequent years
 biomassLater <- biomassMean %>%
@@ -125,7 +129,18 @@ ggplot(data=barGraphStats(data=biomass, variable="total", byFactorNames=c("small
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.9), size=2) +
   ylab(expression(paste('Total Biomass (g m'^'-2',')'))) +
   theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
-  coord_cartesian(ylim=c(0,90)) +
+  # coord_cartesian(ylim=c(0,90)) +
+  facet_grid(cols=vars(year), rows=vars(ws_label))
+#export at 1400x1200
+
+
+#figure - total biomass small_mammal*ws*year
+ggplot(data=barGraphStats(data=subset(biomass, !(trt %in% c('BSI', 'BSX'))), variable="total", byFactorNames=c("invertebrates", "ws_label", "year")), aes(x=invertebrates, y=mean)) +
+  geom_bar(position=position_dodge(), size=2, stat="identity", color="black", fill="white") +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.9), size=2) +
+  ylab(expression(paste('Total Biomass (g m'^'-2',')'))) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
+  # coord_cartesian(ylim=c(0,90)) +
   facet_grid(cols=vars(year), rows=vars(ws_label))
 #export at 1400x1200
 
@@ -170,11 +185,11 @@ bisonBiomassResponse2 <- bisonBiomassResponse%>%
   summarise(mean=mean(total)) %>%
   ungroup() 
 bisonBiomassResponse3 <- bisonBiomassResponse%>%
-  filter(watershed=='N4B') %>%
+  filter(watershed=='N4B'& year>2019) %>%
   group_by(bison) %>%
   summarise(mean=mean(total)) %>%
   ungroup() 
-#bison consumption: 32% of biomass in annual and 48% of biomass in 4yr
+#bison consumption: 33% of biomass in annual and 37% of biomass in 4yr
 
 # #with inverts
 # summary(bisonBiomassModel <- lme(total~watershed*trt*year,
@@ -221,14 +236,16 @@ summary(bisonBiomassModel <- lme(total~watershed*bison*invertebrates*year,
 anova.lme(bisonBiomassModel, type='sequential') 
 emmeans(bisonBiomassModel, pairwise~bison, adjust="tukey") #no interaction - can plot just bison effect (above)
 
-ggplot(data=barGraphStats(data=bisonBiomassResponse, variable="total", byFactorNames=c("bison", "ws_label", "year")), aes(x=bison, y=mean)) +
-  geom_bar(position=position_dodge(), size=2, stat="identity", color="black", fill="white") +
+ggplot(data=barGraphStats(data=bisonBiomassResponse, variable="total", byFactorNames=c("bison", "ws_label", "year")), aes(x=bison, y=mean, fill=bison)) +
+  geom_bar(position=position_dodge(), size=2, stat="identity", color="black") +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.9), size=2) +
+  scale_fill_manual(values=c('lightgrey', 'limegreen')) +
   ylab(expression(paste('Total Biomass (g m'^'-2',')'))) +
-  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
-  coord_cartesian(ylim=c(0,80)) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position='none', legend.justification=c(0,1), strip.text=element_text(size=30)) +
+  # coord_cartesian(ylim=c(0,80)) +
   facet_grid(cols=vars(year), rows=vars(ws_label))
-#export at 1400x1200
+# ggsave('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\figures\\2023\\bison_biomass.png', width=12, height=6, units='in', dpi=600, bg='white')
+
 
 
 
@@ -238,21 +255,22 @@ smallMammalBiomassResponse <- biomass%>%
   mutate(comparison=ifelse(trt %in% c('XSI', 'XXI'), 'with inverts', 'without inverts'))
 
 smallMammalBiomassResponse2 <- smallMammalBiomassResponse%>%
-  filter(watershed=='N1A' & year<2021) %>%
+  filter(watershed=='N1A' & year>2018) %>%
   group_by(small_mammal) %>%
   summarise(mean=mean(total)) %>%
   ungroup() 
+#8% diff in biomass
 smallMammalBiomassResponse3 <- smallMammalBiomassResponse%>%
   filter(watershed=='N1A' & year==2021) %>%
   group_by(small_mammal) %>%
   summarise(mean=mean(total)) %>%
   ungroup() 
 smallMammalBiomassResponse4 <- smallMammalBiomassResponse%>%
-  filter(watershed=='N4B') %>%
+  filter(watershed=='N4B' & year>2018) %>%
   group_by(small_mammal) %>%
   summarise(mean=mean(total)) %>%
   ungroup() 
-#small mammal consumption: 17% of biomass in annual and no effect in 4yr
+#small mammal consumption: 8% of biomass in annual and -7% in 4yr
 
 #interaction
 summary(smallMammalBiomassModel <- lme(total~watershed*small_mammal*invertebrates*year,
@@ -263,41 +281,44 @@ summary(smallMammalBiomassModel <- lme(total~watershed*small_mammal*invertebrate
 anova.lme(smallMammalBiomassModel, type='sequential') 
 emmeans(smallMammalBiomassModel, pairwise~watershed*small_mammal*year, adjust="tukey") #no interaction - can plot just small mammal effect
 
-ggplot(data=barGraphStats(data=smallMammalBiomassResponse, variable="total", byFactorNames=c("small_mammal", "watershed", "year")), aes(x=small_mammal, y=mean)) +
-  geom_bar(position=position_dodge(), size=2, stat="identity", color="black", fill="white") +
+ggplot(data=barGraphStats(data=smallMammalBiomassResponse, variable="total", byFactorNames=c("small_mammal")), aes(x=small_mammal, y=mean, fill=small_mammal)) +
+  geom_bar(position=position_dodge(), size=2, stat="identity", color="black") +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.9), size=2) +
   ylab(expression(paste('Total Biomass (g m'^'-2',')'))) +
-  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
-  coord_cartesian(ylim=c(0,90)) +
-  facet_grid(cols=vars(year), rows=vars(watershed))
-#export at 1400x1200
+  scale_fill_manual(values=c('lightgrey', 'deepskyblue2')) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position='none', legend.justification=c(0,1), strip.text=element_text(size=30)) +
+  coord_cartesian(ylim=c(0,600))
+# ggsave('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\figures\\2023\\smallMammal_totalBiomass.png', width=5, height=5, units='in', dpi=600, bg='white')
+
 
 
 
 
 ###invertebrate effect
-invertebrateBiomassResponse <- biomass%>%
+invertebrateBiomassResponse <- biomass %>%
   filter(trt %in% c('XSX', 'XSI', 'BSX', 'BSI')) %>%
   mutate(comparison=ifelse(trt %in% c('BSX', 'BSI'), 'with bison', 'without bison'))
 
-invertebrateBiomassResponse2 <- invertebrateBiomassResponse%>%
-  filter(comparison=='without bison') %>%
+invertebrateBiomassResponse2 <- invertebrateBiomassResponse %>%
+  filter(comparison=='without bison' & year>2018) %>%
   group_by(invertebrates) %>%
   summarise(mean=mean(total)) %>%
   ungroup() 
-#invert consumption: -4% of biomass in absence of bison
-invertebrateBiomassResponse3 <- invertebrateBiomassResponse%>%
-  filter(comparison=='with bison') %>%
+#invert consumption: -7% of biomass in absence of bison
+invertebrateBiomassResponse3 <- invertebrateBiomassResponse %>%
+  filter(comparison=='with bison' & year>2018) %>%
   group_by(invertebrates) %>%
   summarise(mean=mean(total)) %>%
   ungroup() 
-#invert consumption: 9% of biomass in presence of bison
+#invert consumption: 8% of biomass in presence of bison
 
-ggplot(data=barGraphStats(data=invertebrateBiomassResponse, variable="total", byFactorNames=c("invertebrates")), aes(x=invertebrates, y=mean, fill=invertebrates)) +
+ggplot(data=barGraphStats(data=invertebrateBiomassResponse, variable="total", byFactorNames=c("invertebrates", "watershed", "year")), aes(x=invertebrates, y=mean, fill=invertebrates)) +
   geom_bar(position=position_dodge(), size=2, stat="identity", color="black") +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.9), size=2) +
   ylab(expression(paste('Total Biomass (g m'^'-2',')'))) +
-  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30))
+  scale_fill_manual(values=c('lightgrey', 'lightgoldenrod')) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position='none', legend.justification=c(0,1), strip.text=element_text(size=30)) +
+  facet_grid(cols=vars(year), rows=vars(watershed))
 
 ggplot(data=barGraphStats(data=invertebrateBiomassResponse, variable="gram", byFactorNames=c("invertebrates", "watershed")), aes(x=invertebrates, y=mean, fill=invertebrates)) +
   geom_bar(position=position_dodge(), size=2, stat="identity", color="black") +
@@ -328,7 +349,7 @@ ggplot(data=barGraphStats(data=invertebrateBiomassResponse, variable="total", by
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.9), size=2) +
   ylab(expression(paste('Total Biomass (g m'^'-2',')'))) +
   theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
-  coord_cartesian(ylim=c(0,90)) +
+  # coord_cartesian(ylim=c(0,90)) +
   facet_grid(cols=vars(year), rows=vars(watershed))
 #export at 1400x1200
 
@@ -357,16 +378,29 @@ summary(invertebrateBiomassModel <- lme(total~watershed*invertebrates*year,
 anova.lme(invertebrateBiomassModel, type='sequential') 
 emmeans(invertebrateBiomassModel, pairwise~invertebrates, adjust="tukey") #watershed*year*invert effect
 
-ggplot(data=barGraphStats(data=subset(invertebrateBiomassResponse, comparison=='without bison'), variable="total", byFactorNames=c("invertebrates", "watershed", "year")), aes(x=invertebrates, y=mean)) +
+ggplot(data=barGraphStats(data=subset(invertebrateBiomassResponse, comparison=='without bison'), variable="total", byFactorNames=c("invertebrates")), aes(x=invertebrates, y=mean, fill=invertebrates)) +
+  geom_bar(position=position_dodge(), size=2, stat="identity", color="black") +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.9), size=2) +
+  ylab(expression(paste('Total Biomass (g m'^'-2',')'))) +
+  scale_fill_manual(values=c('lightgrey', 'lightgoldenrod')) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position='none', legend.justification=c(0,1), strip.text=element_text(size=30)) +
+  annotate("text", x=1, y=550, label='a', size=9) +
+  annotate("text", x=2, y=590, label='b', size=9)
+# ggsave('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\figures\\2023\\invert_total.png', width=5, height=5, units='in', dpi=600, bg='white')
+
+
+ggplot(data=barGraphStats(data=subset(invertebrateBiomassResponse), variable="total", byFactorNames=c("invertebrates")), aes(x=invertebrates, y=mean)) +
   geom_bar(position=position_dodge(), size=2, stat="identity", color="black", fill='white') +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.9), size=2) +
   ylab(expression(paste('Total Biomass (g m'^'-2',')'))) +
-  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
-  coord_cartesian(ylim=c(0,90)) +
-  facet_grid(cols=vars(year), rows=vars(watershed))
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30))
 #export at 1400x1200
 
-
+ggplot(data=barGraphStats(data=subset(invertebrateBiomassResponse, comparison=='with bison'), variable="total", byFactorNames=c("invertebrates")), aes(x=invertebrates, y=mean)) +
+  geom_bar(position=position_dodge(), size=2, stat="identity", color="black", fill='white') +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.9), size=2) +
+  ylab(expression(paste('Total Biomass (g m'^'-2',')'))) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30))
 
 
 ##### ANOVA - graminoid biomass #####
@@ -392,8 +426,8 @@ ggplot(data=barGraphStats(data=subset(biomass, trt %in% c('XSI', 'BSI')), variab
   geom_bar(position=position_dodge(0.1), size=2, stat="identity", color='black', fill='white') +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.1), size=2) +
   ylab(expression(paste('Graminoid Biomass (g m'^'-2',')'))) +
-  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
-  coord_cartesian(ylim=c(0,45))
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) 
+  # coord_cartesian(ylim=c(0,45))
 #export at 1400x1200
 
 #figure - graminoid biomass by small mammal
@@ -411,9 +445,18 @@ ggplot(data=barGraphStats(data=subset(biomass, trt %in% c('XXI', 'XSI')), variab
   geom_bar(position=position_dodge(0.1), size=2, stat="identity", color='black', fill='white') +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.1), size=2) +
   ylab(expression(paste('Graminoid Biomass (g m'^'-2',')'))) +
-  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
-  coord_cartesian(ylim=c(0,45))
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30))
+  # coord_cartesian(ylim=c(0,45))
 #export at 1400x1200
+
+#figure - forb biomass with invert and small mammal
+ggplot(data=barGraphStats(data=subset(biomass, !(trt %in% c('BSX', 'BSI'))), variable="gram", byFactorNames=c("trt")), aes(x=trt, y=mean)) +
+  geom_bar(position=position_dodge(0.1), size=2, stat="identity", color='black', fill='white') +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.1), size=2) +
+  ylab(expression(paste('Forb Biomass (g m'^'-2',')'))) +
+  scale_x_discrete(limits=c('XSI', 'XXI', 'XSX', 'XXX'), labels=c('SI', 'I', 'S', 'X')) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) 
+# ggsave('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\figures\\2023\\gram_biomass.png', width=5, height=5, units='in', dpi=600, bg='white')
 
 
 ##### ANOVA - forb biomass #####
@@ -441,7 +484,7 @@ summary(forbBiomassModel <- lme(forb~watershed*year*invertebrates*small_mammal,
                                 correlation=corCompSymm(form=~year|block/trt), 
                                 control=lmeControl(returnObject=T)))
 anova.lme(forbBiomassModel, type='sequential') 
-emmeans(forbBiomassModel, pairwise~watershed*year*invertebrates*small_mammal, adjust="tukey")
+emmeans(forbBiomassModel, pairwise~invertebrates*small_mammal, adjust="tukey")
 
 #figure - forb biomass with invert and small mammal
 ggplot(data=barGraphStats(data=subset(biomass, !(trt %in% c('BSX', 'BSI'))), variable="forb", byFactorNames=c("trt")), aes(x=trt, y=mean)) +
@@ -450,8 +493,12 @@ ggplot(data=barGraphStats(data=subset(biomass, !(trt %in% c('BSX', 'BSI'))), var
   ylab(expression(paste('Forb Biomass (g m'^'-2',')'))) +
   scale_x_discrete(limits=c('XSI', 'XXI', 'XSX', 'XXX'), labels=c('SI', 'I', 'S', 'X')) +
   theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
-  coord_cartesian(ylim=c(0,22))
-#export at 700x600
+  annotate("text", x=1, y=100, label='a', size=9) +
+  annotate("text", x=2, y=130, label='ab', size=9) +
+  annotate("text", x=3, y=140, label='ab', size=9) +
+  annotate("text", x=4, y=170, label='b', size=9) 
+  # coord_cartesian(ylim=c(0,22))
+# ggsave('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\figures\\2023\\forb_invertSmallMammal.png', width=5, height=5, units='in', dpi=600, bg='white')
 
 #figure - forb biomass with invert without bison
 ggplot(data=barGraphStats(data=subset(biomass, !(trt %in% c('BSX', 'BSI'))), variable="forb", byFactorNames=c("invertebrates")), aes(x=invertebrates, y=mean)) +
@@ -459,8 +506,8 @@ ggplot(data=barGraphStats(data=subset(biomass, !(trt %in% c('BSX', 'BSI'))), var
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.1), size=2) +
   ylab(expression(paste('Forb Biomass (g m'^'-2',')'))) +
   # scale_x_discrete(limits=c('BSI', 'BSX', 'XSI', 'XXI', 'XSX', 'XXX')) +
-  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
-  coord_cartesian(ylim=c(0,18))
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) 
+  # coord_cartesian(ylim=c(0,18))
 #export at 500x700
 
 #figure - forb biomass with small mammal without bison
@@ -469,8 +516,8 @@ ggplot(data=barGraphStats(data=subset(biomass, !(trt %in% c('BSX', 'BSI'))), var
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.1), size=2) +
   ylab(expression(paste('Forb Biomass (g m'^'-2',')'))) +
   # scale_x_discrete(limits=c('BSI', 'BSX', 'XSI', 'XXI', 'XSX', 'XXX')) +
-  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
-  coord_cartesian(ylim=c(0,18))
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) 
+  # coord_cartesian(ylim=c(0,18))
 #export at 500x700
 
 
