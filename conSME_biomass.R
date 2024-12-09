@@ -63,9 +63,11 @@ biomass2022 <- read.csv('biomass\\conSME_biomass_2022_corrected.csv') %>%
   filter(!is.na(strip)) %>% 
   mutate(year=2022) %>% 
   select(year, experiment, watershed, block, plot, strip, gram, forb, woody, pdead, notes)
-
-
-biomass <- rbind(biomass2019, biomass2020, biomass2021, biomass2022) %>%
+biomass2023 <- read.csv('biomass\\conSME_biomass_2023.csv') %>% 
+  mutate(experiment='conSME') %>% 
+  select(year, experiment, watershed, block, plot, strip, gram, forb, woody, pdead, notes)
+  
+biomass <- rbind(biomass2019, biomass2020, biomass2021, biomass2022, biomass2023) %>%
   rename(project_name=experiment) %>%
   left_join(trt) %>%
   select(-notes) %>%
