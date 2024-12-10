@@ -59,8 +59,11 @@ sp2021 <- read.csv('species composition\\ConSME_species composition_2021.csv') %
 sp2022 <- read.csv('species composition\\ConSME_species composition_2022.csv') %>% 
   select(-taxa) %>% 
   filter(!(is.na(cover)))
+sp2023 <- read.csv('species composition\\ConSME_species composition_2023.csv') %>% 
+  select(-taxa, -flowernum) %>% 
+  filter(!(is.na(cover)), cover>0)
 
-spAll <- rbind(sp2018,sp2019,sp2020,sp2021,sp2022) %>%
+spAll <- rbind(sp2018,sp2019,sp2020,sp2021,sp2022,sp2023) %>%
   group_by(year, watershed, block, plot, sppnum) %>%
   summarise(max_cover=max(cover)) %>%
   ungroup() %>%
@@ -80,23 +83,24 @@ relCover <- spAll %>%
   mutate(rel_cover=100*(max_cover/total_cover)) %>% #calculate relative cover
   select(-total_cover) %>%
   mutate(replicate=paste(watershed, block, plot, sep='::')) %>%
-  left_join(trt) %>%
-  filter(!is.na(sppnum)) #remove 5 entries that were unknowns
+  left_join(trt)
 
 
 ##### community metrics #####
 commMetrics <- community_structure(relCover, time.var='year', abundance.var='rel_cover', replicate.var='replicate') %>%
   separate(replicate, into=c('watershed', 'block', 'plot'), sep='::') %>%
   mutate(plot=as.integer(plot)) %>%
-  left_join(trt)
+  left_join(trt) %>% 
+  mutate(ws_label=ifelse(watershed=='N1A', 'Annual', '4 Year'),
+         experiment_year=year-2018)
 
-hist(log(commMetrics$richness))
+hist(log(commMetrics$richness)) #looks as good as we can get!
 shapiro.test(log(commMetrics$richness))
-# W = 0.99191, p-value = 0.00514
+# W = 0.98961, p-value = 0.0001609
 
 hist(log(commMetrics$Evar))
 shapiro.test(log(commMetrics$Evar))
-# W = 0.99836, p-value = 0.9
+# W = 0.99854, p-value = 0.881
 
 
 ##### richness response #####
@@ -110,70 +114,78 @@ emmeans(richModel, pairwise~year*watershed*bison, adjust="tukey")
 emmeans(richModel, pairwise~invertebrates, adjust="tukey")
 
 #figure - richness by watershed, bison
-ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="richness", byFactorNames=c("bison", 'watershed')), aes(x=watershed, y=mean, fill=bison)) +
+richnessBisonFig <- ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="richness", byFactorNames=c("bison", 'watershed')), aes(x=watershed, y=mean, fill=bison)) +
   geom_bar(position=position_dodge(0.9), size=2, stat="identity", color='black') +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.9), size=2) +
-  ylab(expression(paste('Plant Species Richness'))) +
+  ylab(expression(paste('Plant Species\nRichness'))) +
+  # ylab('') +
   coord_cartesian(ylim=c(0,30)) +
   scale_fill_manual(values=c('lightgrey', 'limegreen')) +
   scale_x_discrete(labels=c('Annual', '4 Year')) +
   theme(axis.title.x=element_blank(), axis.text.x=element_text(size=35), axis.title.y=element_text(size=35, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=35), legend.position=c(0.98, 0.98), legend.justification=c(1,1), strip.text=element_text(size=35), legend.text=element_text(size=35)) 
 # ggsave('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\figures\\2023\\bison_richness.png', width=7, height=7, units='in', dpi=600, bg='white')
 
+# #figure - richness by year, bison - don't include figure (it's obv from stats)
+# ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="richness", byFactorNames=c("bison", 'year')), aes(x=as.factor(year), y=mean, fill=bison)) +
+#   geom_bar(position=position_dodge(0.9), size=2, stat="identity", color='black') +
+#   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.9), size=2) +
+#   ylab(expression(paste('Plant Species Richness'))) +
+#   coord_cartesian(ylim=c(0,30)) +
+#   scale_fill_manual(values=c('lightgrey', 'limegreen')) +
+#   # scale_x_discrete(labels=c('Annual', '4 Year')) +
+#   theme(axis.title.x=element_blank(), axis.text.x=element_text(size=35), axis.title.y=element_text(size=35, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=35), legend.position=c(0.98, 0.98), legend.justification=c(1,1), strip.text=element_text(size=35), legend.text=element_text(size=35)) 
+# # ggsave('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\figures\\2023\\bison_year_richness.png', width=7, height=7, units='in', dpi=600, bg='white')
 
 #figure - richness by invertebrates
-ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="richness", byFactorNames=c("invertebrates")), aes(x=invertebrates, y=mean, fill=invertebrates)) +
+richnessInvertFig <- ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="richness", byFactorNames=c("invertebrates")), aes(x=invertebrates, y=mean, fill=invertebrates)) +
   geom_bar(position=position_dodge(0.1), size=2, stat="identity", color='black') +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.1), size=2) +
   coord_cartesian(ylim=c(0,23)) +
-  ylab(expression(paste('Plant Species Richness'))) +
-  scale_fill_manual(values=c('lightgrey', 'lightgoldenrod')) +
+  # ylab(expression(paste('Plant Species\nRichness'))) +
+  ylab('') +
+  scale_fill_manual(values=c('lightgrey', 'skyblue')) +
   theme(axis.title.x=element_blank(), axis.text.x=element_text(size=35), axis.title.y=element_text(size=35, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=35), legend.position='none', legend.justification=c(0,1), strip.text=element_text(size=35))
 # ggsave('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\figures\\2023\\invert_richness.png', width=4, height=7, units='in', dpi=600, bg='white')
 
+#figure - richness by small mammals
+richnessSmallMammalFig <- ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="richness", byFactorNames=c("small_mammal", "year", "ws_label")), aes(x=small_mammal, y=mean, fill=small_mammal)) +
+  geom_bar(position=position_dodge(0.1), size=2, stat="identity", color='black') +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.1), size=2) +
+  # coord_cartesian(ylim=c(0,23)) +
+  ylab(expression(paste('Plant Species\nRichness'))) +
+  scale_fill_manual(values=c('lightgrey', 'orange')) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=35), axis.title.y=element_text(size=35, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=35), legend.position='none', legend.justification=c(0,1), strip.text=element_text(size=35)) +
+  facet_grid(cols=vars(year), rows=vars(ws_label))
+# ggsave('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\figures\\2023\\invert_richness.png', width=4, height=7, units='in', dpi=600, bg='white')
 
-#response ratios 
+plot_grid(arrangeGrob(richnessBisonFig, richnessInvertFig, ncol=2), 
+          richnessSmallMammalFig,
+          nrow=2, ncol=1, rel_heights = c(0.5, 1))
+# export to file Fig 4_richness_interactiveEffects.png at 1600x1600
+
+##### response ratios #####
+###bison
 commMetricsMeans <- commMetrics %>%
-  group_by(watershed, year, bison) %>%
+  group_by(watershed, bison) %>%
   summarise(richness_mean=mean(richness), sd=sd(richness), N=length(richness)) %>%
   ungroup() %>%
   mutate(se=sd/sqrt(N))
 
-#figure - richness by watershed, year, bison
-ggplot(data=subset(commMetricsMeans, year>2018), aes(x=as.factor(year), y=richness_mean, color=bison)) +
-  geom_point(size=2) +
-  geom_smooth(method='lm') +
-  geom_errorbar(aes(ymin=richness_mean-se, ymax=richness_mean+se), width=.1) +
-  ylab(expression(paste('Plant Species Richness'))) +
-  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
-  # coord_cartesian(ylim=c(0,750)) +
-  facet_grid(rows=vars(watershed))
-#export at 1400x600
-
-
-commMetricsRR <- commMetrics %>%
-  group_by(watershed, block, year, bison) %>%
-  summarise(richness_mean=mean(richness)) %>%
+###small mammal
+commMetricsMeans <- commMetrics %>%
+  filter(year %in% c(2020, 2023)) %>% 
+  group_by(watershed, small_mammal) %>%
+  summarise(richness_mean=mean(richness), sd=sd(richness), N=length(richness)) %>%
   ungroup() %>%
-  pivot_wider(names_from='bison', values_from='richness_mean') %>%
-  mutate(richness_percent_loss=100*(B-X)/B)
+  mutate(se=sd/sqrt(N))
 
-temp <- commMetricsRR %>%
-  group_by(watershed, year) %>%
-  summarise(richness_mean_bison=mean(B), richness_mean_X=mean(X)) %>%
-  ungroup()
+###invert
+commMetricsMeans <- commMetrics %>%
+  group_by(invertebrates) %>%
+  summarise(richness_mean=mean(richness), sd=sd(richness), N=length(richness)) %>%
+  ungroup() %>%
+  mutate(se=sd/sqrt(N))
 
-ggplot(data=barGraphStats(data=subset(commMetricsRR, year>2018), variable="richness_percent_loss", byFactorNames=c("year", 'watershed')), aes(x=as.factor(year), y=-(mean))) +
-  geom_point(size=5) +
-  geom_errorbar(aes(ymin=(-mean-se), ymax=(-mean+se)), width=.1, size=2) +
-  ylab('Plant Species Richness Response (%)') +
-  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
-  # coord_cartesian(ylim=c(0,50)) +
-  geom_hline(yintercept=0) +
-  facet_grid(rows=vars(watershed))
-#export at 1400x600
-  
-  
   
 ##### evenness response #####
 summary(evarModel <- lme(log(Evar)~watershed*year*invertebrates*bison + watershed*year*invertebrates*small_mammal,
@@ -184,27 +196,35 @@ summary(evarModel <- lme(log(Evar)~watershed*year*invertebrates*bison + watershe
 anova.lme(evarModel, type='sequential') 
 emmeans(evarModel, pairwise~year*trt*watershed, adjust="tukey")
 
-#figure - evenness by small mammal and inverts
-ggplot(data=barGraphStats(data=subset(commMetrics, year>2018 & trt %in% c('XSI', 'XSX', 'XXI', 'XXX')), variable="Evar", byFactorNames=c("small_mammal")), aes(x=small_mammal, y=mean)) +
-  geom_point(position=position_dodge(0.1), size=5, stat="identity", color='black', fill='white') +
-  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.1), size=2) +
-  ylab(expression(paste('Evenness'))) +
-  # scale_x_discrete(limits=c('XSI', 'XXI', 'XSX', 'XXX')) +
-  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30, angle=90), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) #+
-  # coord_cartesian(ylim=c(0,0.55)) +
-  # facet_grid(cols=vars(year), rows=vars(watershed))
-#export at 1400x1200
+#figure - evenness by watershed, year, bison
+evennessBisonFig <- ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="Evar", byFactorNames=c("bison", 'ws_label', "year")), aes(x=bison, y=mean, fill=bison)) +
+  geom_bar(position=position_dodge(0.9), size=2, stat="identity", color='black') +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.9), size=2) +
+  ylab(expression(paste('Plant Species Evenness'))) +
+  # ylab('') +
+  coord_cartesian(ylim=c(0,0.6)) +
+  scale_fill_manual(values=c('lightgrey', 'limegreen')) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=35), 
+        axis.title.y=element_text(size=35, angle=90, vjust=1, margin=margin(r=15)), 
+        axis.text.y=element_text(size=35), 
+        legend.position='none', strip.text=element_text(size=35), 
+        legend.text=element_text(size=35)) +
+  facet_grid(cols=vars(year), rows=vars(ws_label))
+# ggsave('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\figures\\2023\\bison_evenness.png', width=7, height=7, units='in', dpi=600, bg='white')
 
-# #figure - evenness by bison
-# ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="Evar", byFactorNames=c("bison", "watershed", "year")), aes(x=year, y=mean, color=bison)) +
-#   geom_point(position=position_dodge(0.1), size=5, stat="identity", color='black', fill='white') +
-#   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.1), size=2) +
-#   ylab(expression(paste('Evenness'))) +
-#   # scale_x_discrete(limits=c('XSI', 'XXI', 'XSX', 'XXX')) +
-#   theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30, angle=90), axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=26), legend.position=c(0, 1), legend.justification=c(0,1), strip.text=element_text(size=30)) +
-# # coord_cartesian(ylim=c(0,0.55)) +
-# facet_grid(rows=vars(watershed))
-# #export at 1400x1200
+#figure - evenness by watershed, year, small mammals
+evennessSmallMammalFig <- ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="Evar", byFactorNames=c("small_mammal", "year", "ws_label")), aes(x=small_mammal, y=mean, fill=small_mammal)) +
+  geom_bar(position=position_dodge(0.1), size=2, stat="identity", color='black') +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.1), size=2) +
+  coord_cartesian(ylim=c(0,0.6)) +
+  ylab(expression(paste('Plant Species Evenness'))) +
+  scale_fill_manual(values=c('lightgrey', 'orange')) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=35), axis.title.y=element_text(size=35, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=35), legend.position='none', legend.justification=c(0,1), strip.text=element_text(size=35)) +
+  facet_grid(cols=vars(year), rows=vars(ws_label))
+# ggsave('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\figures\\2023\\invert_richness.png', width=4, height=7, units='in', dpi=600, bg='white')
+
+plot_grid(evennessBisonFig, evennessSmallMammalFig, nrow=2, ncol=1)
+# export to file Fig 5_evenness_interactiveEffects.png at 1600x1400
 
 
 ##### community difference #####
