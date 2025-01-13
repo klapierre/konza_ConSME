@@ -242,7 +242,7 @@ commDiffBison <- multivariate_difference(df=subset(relCover, trt %in% c('BSX', '
 ggplot(data=subset(commDiffBison, year>2018), aes(x=year, y=composition_diff, color=trt2)) +
   geom_point() +
   geom_smooth(method='lm', formula=y~poly(x,2), se=F)
-# effect in 2021, but goes away in 2022
+# increasing difference through time (except 2022, where it goes way down)
 
 
 #looking at effects without bison
@@ -255,27 +255,32 @@ ggplot(data=subset(commDiffNoBison, year>2018), aes(x=year, y=composition_diff, 
 
 
 ##### PERMANOVA #####
-relCover2022 <- relCover %>%
+relCover2023 <- relCover %>%
   # filter(bison=='X') %>% 
   mutate(bison_ws=paste(bison, watershed, sep='::')) %>% 
-  select(year, watershed, replicate, trt, bison_ws, bison, small_mammal, invertebrates, genus_species, rel_cover) %>%
+  select(year, watershed, block, replicate, trt, bison_ws, bison, small_mammal, invertebrates, genus_species, rel_cover) %>%
   pivot_wider(names_from='genus_species', values_from='rel_cover', values_fill=list(rel_cover=0)) %>%
-  filter(year==2022)
+  filter(year==2023)
 
-print(permanova <- adonis2(formula = relCover2022[,9:194]~watershed*bison*small_mammal*invertebrates, data=relCover2022, permutations=999, method="bray"))
+print(permanova <- adonis(formula = relCover2023[,10:204]~
+                            year*watershed*bison*invertebrates + 
+                            year*watershed*small_mammal*invertebrates, 
+                          data=relCover2023, permutations=999, method="bray"))
+result_table <- as.data.frame(permanova$aov.tab)
 #watershed*bison F=1.88, df=1,104, p=0.067; bison F=14.47, df=1,104, p=0.001
 
+
 #betadisper
-veg <- vegdist(relCover2022[,9:194], method = "bray")
-dispersion <- betadisper(veg, relCover2022$invertebrates)
+veg <- vegdist(relCover2023[,10:204], method = "bray")
+dispersion <- betadisper(veg, relCover2023$bison)
 permutest(dispersion, pairwise=TRUE, permutations=999) 
 #F=1.4561, p=0.226
 
-sppBC <- metaMDS(relCover2022[,9:194])
+sppBC <- metaMDS(relCover2023[,10:204])
 
-plotData <- relCover2022[,1:8]
+plotData <- relCover2023[,1:9]
 
-#Use the vegan ellipse function to make ellipses
+#bison and watershed NMDS
 veganCovEllipse<-function (cov, center = c(0, 0), scale = 1, npoints = 100)
 {
   theta <- (0:npoints) * 2 * pi/npoints
@@ -283,7 +288,7 @@ veganCovEllipse<-function (cov, center = c(0, 0), scale = 1, npoints = 100)
   t(center + scale * t(Circle %*% chol(cov)))
 }
 
-BC_NMDS = data.frame(MDS1 = sppBC$points[,1], MDS2 = sppBC$points[,2],group=relCover2022$bison_ws)
+BC_NMDS = data.frame(MDS1 = sppBC$points[,1], MDS2 = sppBC$points[,2],group=relCover2023$bison_ws)
 BC_NMDS_Graph <- cbind(plotData,BC_NMDS)
 BC_Ord_Ellipses<-ordiellipse(sppBC, plotData$bison_ws, display = "sites",
                              kind = "se", conf = 0.95, label = T)               
@@ -301,153 +306,264 @@ for(g in unique(BC_NMDS$group)){
 } #Generate ellipses points
 
 ggplot(BC_NMDS_Graph, aes(x=MDS1, y=MDS2, color=group,linetype = group, shape = group)) +
-  geom_point(size=6)+ 
-  geom_path(data = BC_Ellipses, aes(x = NMDS1, y = NMDS2), size = 3) +
+  geom_point(size=3)+ 
+  geom_path(data = BC_Ellipses, aes(x = NMDS1, y = NMDS2), size = 1) +
   labs(color="", linetype = "", shape = "") +
   scale_colour_manual(values=c("brown", "brown", "dark green", "dark green", "dark green", "dark green"), name = "") +
   scale_linetype_manual(values = c("twodash", "solid", "twodash", "solid", "twodash", "solid"), name = "") +
   xlab("NMDS1")+ 
   ylab("NMDS2")+ 
   theme(axis.text.x=element_text(size=24, color = "black"), axis.text.y = element_text(size = 24, color = "black"), legend.text = element_text(size = 24))
+# ggsave(file='C:\\Users\\kjkomatsu\\Smithsonian Dropbox\\Kimberly Komatsu\\konza projects\\conSME\\figures\\2025\\Fig S2_NMDSbison2023.png', width=10, height=8, units='in', dpi=300, bg='white')
 
+
+#invertebrate NMDS
+BC_NMDS = data.frame(MDS1 = sppBC$points[,1], MDS2 = sppBC$points[,2],group=relCover2023$invertebrates)
+BC_NMDS_Graph <- cbind(plotData,BC_NMDS)
+BC_Ord_Ellipses<-ordiellipse(sppBC, plotData$invertebrates, display = "sites",
+                             kind = "se", conf = 0.95, label = T)               
+
+ord3 <- data.frame(plotData,scores(sppBC,display="sites")) %>%
+  group_by(invertebrates)
+
+BC_Ord_Ellipses<-ordiellipse(sppBC, plotData$invertebrates, display = "sites",
+                             kind = "se", conf = 0.95, label = T)
+BC_Ellipses <- data.frame() #Make a new empty data frame called BC_Ellipses  
+for(g in unique(BC_NMDS$group)){
+  BC_Ellipses <- rbind(BC_Ellipses, cbind(as.data.frame(with(BC_NMDS[BC_NMDS$group==g,], 
+                                                             veganCovEllipse(BC_Ord_Ellipses[[g]]$cov,BC_Ord_Ellipses[[g]]$center,BC_Ord_Ellipses[[g]]$scale)))
+                                          ,group=g))
+} #Generate ellipses points
+
+ggplot(BC_NMDS_Graph, aes(x=MDS1, y=MDS2, color=group,linetype = group, shape = group)) +
+  geom_point(size=3)+ 
+  geom_path(data = BC_Ellipses, aes(x = NMDS1, y = NMDS2), size = 1) +
+  labs(color="", linetype = "", shape = "") +
+  scale_colour_manual(values=c("lightgrey", "skyblue"), name = "") +
+  scale_linetype_manual(values = c("twodash", "solid", "twodash", "solid", "twodash", "solid"), name = "") +
+  xlab("NMDS1")+ 
+  ylab("NMDS2")+ 
+  theme(axis.text.x=element_text(size=24, color = "black"), axis.text.y = element_text(size = 24, color = "black"), legend.text = element_text(size = 24))
+# ggsave(file='C:\\Users\\kjkomatsu\\Smithsonian Dropbox\\Kimberly Komatsu\\konza projects\\conSME\\figures\\2025\\Fig S2_NMDSbison2023.png', width=10, height=8, units='in', dpi=300, bg='white')
 
 
 ##### simper #####
-print(sim <- with(relCover2022, simper(relCover2022[,7:172], trt)))
+#bison and watershed
+summary(sim <- with(relCover2023, simper(relCover2023[,10:204], bison_ws)))
+
+#invertebrates
+summary(sim <- with(relCover2023, simper(relCover2023[,10:204], invertebrates)))
 
 
 ##### trends for dominant species #####
-#bison effect
+
+###bison effect
+#andropogon gerardii
 ggplot(barGraphStats(data=subset(relCover, genus_species=='andropogon_gerardii' & year>2018), variable="max_cover", byFactorNames=c("year", "bison", "watershed")), aes(x=year, y=mean, color=bison)) +
   geom_point(size=3) +
   geom_smooth(method='lm', formula=y~poly(x,2), se=F) +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.1) +
-  ylab('Andropogon gerardii cover') +
   facet_wrap(~watershed)
 
-#bison effect in 4 yr
+#lespedeza violacea
+ggplot(barGraphStats(data=subset(relCover, genus_species=='lespedeza_violacea' & year>2018), variable="max_cover", byFactorNames=c("year", "bison", "watershed")), aes(x=year, y=mean, color=bison)) +
+  geom_point(size=3) +
+  geom_smooth(method='lm', formula=y~poly(x,2), se=F) +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.1) +
+  facet_wrap(~watershed)
+
+#bouteloua dactyloides
+ggplot(barGraphStats(data=subset(relCover, genus_species=='bouteloua_dactyloides' & year>2018), variable="max_cover", byFactorNames=c("year", "bison", "watershed")), aes(x=year, y=mean, color=bison)) +
+  geom_point(size=3) +
+  geom_smooth(method='lm', formula=y~poly(x,2), se=F) +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.1) +
+  facet_wrap(~watershed)
+
+#vernonia baldwinii
+ggplot(barGraphStats(data=subset(relCover, genus_species=='vernonia_baldwinii' & year>2018), variable="max_cover", byFactorNames=c("year", "bison", "watershed")), aes(x=year, y=mean, color=bison)) +
+  geom_point(size=3) +
+  geom_smooth(method='lm', formula=y~poly(x,2), se=F) +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.1) +
+  facet_wrap(~watershed)
+
+#dalea multiflora
+ggplot(barGraphStats(data=subset(relCover, genus_species=='dalea_multiflora' & year>2018), variable="max_cover", byFactorNames=c("year", "bison", "watershed")), aes(x=year, y=mean, color=bison)) +
+  geom_point(size=3) +
+  geom_smooth(method='lm', formula=y~poly(x,2), se=F) +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.1) +
+  facet_wrap(~watershed)
+
+#schizachyrium scoparium
+ggplot(barGraphStats(data=subset(relCover, genus_species=='schizachyrium_scoparium' & year>2018), variable="max_cover", byFactorNames=c("year", "bison", "watershed")), aes(x=year, y=mean, color=bison)) +
+  geom_point(size=3) +
+  geom_smooth(method='lm', formula=y~poly(x,2), se=F) +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.1) +
+  facet_wrap(~watershed)
+
+#bouteloua curtipendula
 ggplot(barGraphStats(data=subset(relCover, genus_species=='bouteloua_curtipendula' & year>2018), variable="max_cover", byFactorNames=c("year", "bison", "watershed")), aes(x=year, y=mean, color=bison)) +
   geom_point(size=3) +
   geom_smooth(method='lm', formula=y~poly(x,2), se=F) +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.1) +
-  ylab('Bouteloua curtipendula cover') +
   facet_wrap(~watershed)
 
-#invert effect
-ggplot(barGraphStats(data=subset(relCover, genus_species=='lespedeza_violacea' & year>2018), variable="max_cover", byFactorNames=c("year", "invertebrates", "watershed")), aes(x=year, y=mean, color=invertebrates)) +
+#sporobolus compositus
+ggplot(barGraphStats(data=subset(relCover, genus_species=='sporobolus_compositus' & year>2018), variable="max_cover", byFactorNames=c("year", "bison", "watershed")), aes(x=year, y=mean, color=bison)) +
   geom_point(size=3) +
   geom_smooth(method='lm', formula=y~poly(x,2), se=F) +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.1) +
-  ylab('Lespedeza violacea cover') +
   facet_wrap(~watershed)
 
-#bison effect
-ggplot(barGraphStats(data=subset(relCover, genus_species=='ambrosia_psilostachya' & year>2018), variable="max_cover", byFactorNames=c("year", "bison", "watershed")), aes(x=year, y=mean, color=bison)) +
+#bouteloua hirsuta
+ggplot(barGraphStats(data=subset(relCover, genus_species=='bouteloua_hirsuta' & year>2018), variable="max_cover", byFactorNames=c("year", "bison", "watershed")), aes(x=year, y=mean, color=bison)) +
   geom_point(size=3) +
   geom_smooth(method='lm', formula=y~poly(x,2), se=F) +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.1) +
-  ylab('Ambrosia psilostachya cover') +
   facet_wrap(~watershed)
 
-# ??? who is driving this sp?
-ggplot(barGraphStats(data=subset(relCover, genus_species=='oxalis_violacea' & year>2018), variable="max_cover", byFactorNames=c("year", "trt", "watershed")), aes(x=year, y=mean, color=trt)) +
+###invert effect
+#symphotrichum ericoides
+ggplot(barGraphStats(data=subset(relCover, genus_species=='symphyotrichum_ericoides' & year>2018), variable="max_cover", byFactorNames=c("year", "invertebrates", "watershed")), aes(x=year, y=mean, color=invertebrates)) +
   geom_point(size=3) +
   geom_smooth(method='lm', formula=y~poly(x,2), se=F) +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.1) +
-  ylab('Oxalis violacea cover') +
+  facet_wrap(~watershed)
+
+#dichanthelium oligosanthes
+ggplot(barGraphStats(data=subset(relCover, genus_species=='dichanthelium_oligosanthes' & year>2018), variable="max_cover", byFactorNames=c("year", "invertebrates", "watershed")), aes(x=year, y=mean, color=invertebrates)) +
+  geom_point(size=3) +
+  geom_smooth(method='lm', formula=y~poly(x,2), se=F) +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.1) +
+  facet_wrap(~watershed)
+
+#echinacia angustifolia
+ggplot(barGraphStats(data=subset(relCover, genus_species=='echinacea_angustifolia' & year>2018), variable="max_cover", byFactorNames=c("year", "invertebrates", "watershed")), aes(x=year, y=mean, color=invertebrates)) +
+  geom_point(size=3) +
+  geom_smooth(method='lm', formula=y~poly(x,2), se=F) +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.1) +
+  facet_wrap(~watershed)
+
+#liatris punctata
+ggplot(barGraphStats(data=subset(relCover, genus_species=='liatris_punctata' & year>2018), variable="max_cover", byFactorNames=c("year", "invertebrates", "watershed")), aes(x=year, y=mean, color=invertebrates)) +
+  geom_point(size=3) +
+  geom_smooth(method='lm', formula=y~poly(x,2), se=F) +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.1) +
   facet_wrap(~watershed)
 
 
+# ##### RACs #####
+# 
+# #bison by watershed
+# rankAbundance <- relCover %>%
+#   filter(year==2023) %>%
+#   mutate(spp_name=str_to_sentence(paste(genus, species, sep=' '))) %>%
+#   group_by(watershed, bison, spp_name, growthform, lifeform) %>%
+#   summarize(avg_cover=mean(rel_cover)) %>%
+#   ungroup() %>%
+#   arrange(bison, watershed, -avg_cover) %>%
+#   mutate(bison_ws=paste(bison, watershed, sep='::')) %>%
+#   group_by(bison_ws) %>%
+#   mutate(rank=seq_along(bison_ws)) %>%
+#   ungroup() %>%
+#   mutate(lifeform2=ifelse(spp_name=='Sisyrinchium campestre', 'f', ifelse(lifeform=='o', 'f', ifelse(lifeform=='s', 'g', as.character(lifeform))))) %>%
+#   filter(spp_name!='NA NA')
+# 
+# ggplot(data=subset(rankAbundance, bison_ws=='B::N1A', avg_cover>0), aes(x=rank, y=avg_cover)) +
+#   geom_line() +
+#   geom_point(aes(colour=lifeform2, shape=growthform), size=3) +
+#   scale_color_manual(labels=c("Forb", "Graminoid", "Woody"), values=c('#DE8C00', '#009CC0', '#83431E')) +
+#   scale_shape_discrete(labels=c("Annual", "Biennial", "Perennial"))+
+#   xlab('') +
+#   ylab('N1A Bison\nRelative Percent Cover\n') +
+#   # scale_x_continuous(expand=c(0,0), limits=c(0.5,17), breaks=seq(0,17,5)) +
+#   # scale_y_continuous(expand=c(0,0), limits=c(0,60), breaks=seq(0,60,10)) +
+#   # geom_text(aes(y=avg_cover+1.2, x=rank+0.1, label=spp_name), hjust='left', vjust='center', angle=90, size=4) +
+#   expand_limits(y=30, x=90)
+# #export at 1400x400
+# 
+# ggplot(data=subset(rankAbundance, bison_ws=='X::N1A', avg_cover>0), aes(x=rank, y=avg_cover)) +
+#   geom_line() +
+#   geom_point(aes(colour=lifeform2, shape=growthform), size=3) +
+#   scale_color_manual(labels=c("Forb", "Graminoid", "Woody"), values=c('#DE8C00', '#009CC0', '#83431E')) +
+#   scale_shape_discrete(labels=c("Annual", "Biennial", "Perennial"))+
+#   xlab('') +
+#   ylab('N1A Bison Removed\nRelative Percent Cover\n') +
+#   # scale_x_continuous(expand=c(0,0), limits=c(0.5,17), breaks=seq(0,17,5)) +
+#   # scale_y_continuous(expand=c(0,0), limits=c(0,60), breaks=seq(0,60,10)) +
+#   # geom_text(aes(y=avg_cover+1.2, x=rank+0.1, label=spp_name), hjust='left', vjust='center', angle=90, size=4) +
+#   expand_limits(y=30, x=90)
+# #export at 1400x400
+# 
+# ggplot(data=subset(rankAbundance, bison_ws=='B::N4B', avg_cover>0), aes(x=rank, y=avg_cover)) +
+#   geom_line() +
+#   geom_point(aes(colour=lifeform2, shape=growthform), size=3) +
+#   scale_color_manual(labels=c("Forb", "Graminoid", "Woody"), values=c('#DE8C00', '#009CC0', '#83431E')) +
+#   scale_shape_discrete(labels=c("Annual", "Biennial", "Perennial"))+
+#   xlab('') +
+#   ylab('N4B Bison\nRelative Percent Cover\n') +
+#   # scale_x_continuous(expand=c(0,0), limits=c(0.5,17), breaks=seq(0,17,5)) +
+#   # scale_y_continuous(expand=c(0,0), limits=c(0,60), breaks=seq(0,60,10)) +
+#   # geom_text(aes(y=avg_cover+1.2, x=rank+0.1, label=spp_name), hjust='left', vjust='center', angle=90, size=4) +
+#   expand_limits(y=40, x=90)
+# #export at 1400x400
+# 
+# ggplot(data=subset(rankAbundance, bison_ws=='X::N4B', avg_cover>0), aes(x=rank, y=avg_cover)) +
+#   geom_line() +
+#   geom_point(aes(colour=lifeform2, shape=growthform), size=3) +
+#   scale_color_manual(labels=c("Forb", "Graminoid", "Woody"), values=c('#DE8C00', '#009CC0', '#83431E')) +
+#   scale_shape_discrete(labels=c("Annual", "Biennial", "Perennial"))+
+#   xlab('') +
+#   ylab('N4B Bison Removed\nRelative Percent Cover\n') +
+#   # scale_x_continuous(expand=c(0,0), limits=c(0.5,17), breaks=seq(0,17,5)) +
+#   # scale_y_continuous(expand=c(0,0), limits=c(0,60), breaks=seq(0,60,10)) +
+#   # geom_text(aes(y=avg_cover+1.2, x=rank+0.1, label=spp_name), hjust='left', vjust='center', angle=90, size=4) +
+#   expand_limits(y=40, x=90)
+# #export at 1400x400
+# 
+# 
+# #invertebrate
+# rankAbundance <- relCover %>%
+#   filter(year==2023) %>%
+#   mutate(spp_name=str_to_sentence(paste(genus, species, sep=' '))) %>%
+#   group_by(invertebrates, spp_name, growthform, lifeform) %>%
+#   summarize(avg_cover=mean(rel_cover)) %>%
+#   ungroup() %>%
+#   arrange(invertebrates, -avg_cover) %>%
+#   group_by(invertebrates) %>%
+#   mutate(rank=seq_along(invertebrates)) %>%
+#   ungroup() %>%
+#   mutate(lifeform2=ifelse(spp_name=='Sisyrinchium campestre', 'f', ifelse(lifeform=='o', 'f', ifelse(lifeform=='s', 'g', as.character(lifeform))))) %>%
+#   filter(spp_name!='NA NA')
+# 
+# ggplot(data=subset(rankAbundance, invertebrates=='I', avg_cover>0), aes(x=rank, y=avg_cover)) +
+#   geom_line() +
+#   geom_point(aes(colour=lifeform2, shape=growthform), size=3) +
+#   scale_color_manual(labels=c("Forb", "Graminoid", "Woody"), values=c('#DE8C00', '#009CC0', '#83431E')) +
+#   scale_shape_discrete(labels=c("Annual", "Biennial", "Perennial"))+
+#   xlab('') +
+#   ylab('Invertebrates\nRelative Percent Cover\n') +
+#   # scale_x_continuous(expand=c(0,0), limits=c(0.5,17), breaks=seq(0,17,5)) +
+#   # scale_y_continuous(expand=c(0,0), limits=c(0,60), breaks=seq(0,60,10)) +
+#   geom_text(aes(y=avg_cover+1.2, x=rank+0.1, label=spp_name), hjust='left', vjust='center', angle=90, size=4) +
+#   expand_limits(y=30, x=90)
+# #export at 1400x400
+# 
+# ggplot(data=subset(rankAbundance, invertebrates=='X', avg_cover>0), aes(x=rank, y=avg_cover)) +
+#   geom_line() +
+#   geom_point(aes(colour=lifeform2, shape=growthform), size=3) +
+#   scale_color_manual(labels=c("Forb", "Graminoid", "Woody"), values=c('#DE8C00', '#009CC0', '#83431E')) +
+#   scale_shape_discrete(labels=c("Annual", "Biennial", "Perennial"))+
+#   xlab('') +
+#   ylab('Invertebrates Removed\nRelative Percent Cover\n') +
+#   # scale_x_continuous(expand=c(0,0), limits=c(0.5,17), breaks=seq(0,17,5)) +
+#   # scale_y_continuous(expand=c(0,0), limits=c(0,60), breaks=seq(0,60,10)) +
+#   geom_text(aes(y=avg_cover+1.2, x=rank+0.1, label=spp_name), hjust='left', vjust='center', angle=90, size=4) +
+#   expand_limits(y=30, x=90)
+# #export at 1400x400
 
-#RACs
-rankAbundance <- relCover %>%
-  filter(year==2021) %>%
-  mutate(spp_name=str_to_sentence(paste(genus, species, sep=' '))) %>%
-  group_by(watershed, bison, spp_name, growthform, lifeform) %>%
-  summarize(avg_cover=mean(rel_cover)) %>%
-  ungroup() %>%
-  arrange(bison, watershed, -avg_cover) %>%
-  mutate(bison_ws=paste(bison, watershed, sep='::')) %>%
-  group_by(bison_ws) %>%
-  mutate(rank=seq_along(bison_ws)) %>%
-  ungroup() %>%
-  mutate(lifeform2=ifelse(spp_name=='Sisyrinchium campestre', 'f', ifelse(lifeform=='o', 'f', ifelse(lifeform=='s', 'g', as.character(lifeform))))) %>%
-  filter(spp_name!='NA NA')
-
-ggplot(data=subset(rankAbundance, bison_ws=='B::N1A', avg_cover>0), aes(x=rank, y=avg_cover)) +
-  geom_line() +
-  geom_point(aes(colour=lifeform2, shape=growthform), size=3) +
-  scale_color_manual(labels=c("Forb", "Graminoid", "Woody"), values=c('#DE8C00', '#009CC0', '#83431E')) +
-  scale_shape_discrete(labels=c("Annual", "Biennial", "Perennial"))+
-  xlab('') +
-  ylab('N1A Bison\nRelative Percent Cover\n') +
-  # scale_x_continuous(expand=c(0,0), limits=c(0.5,17), breaks=seq(0,17,5)) +
-  # scale_y_continuous(expand=c(0,0), limits=c(0,60), breaks=seq(0,60,10)) +
-  # geom_text(aes(y=avg_cover+1.2, x=rank+0.1, label=spp_name), hjust='left', vjust='center', angle=90, size=4) +
-  expand_limits(y=30, x=90)
-#export at 1400x400
-
-ggplot(data=subset(rankAbundance, bison_ws=='X::N1A', avg_cover>0), aes(x=rank, y=avg_cover)) +
-  geom_line() +
-  geom_point(aes(colour=lifeform2, shape=growthform), size=3) +
-  scale_color_manual(labels=c("Forb", "Graminoid", "Woody"), values=c('#DE8C00', '#009CC0', '#83431E')) +
-  scale_shape_discrete(labels=c("Annual", "Biennial", "Perennial"))+
-  xlab('') +
-  ylab('N1A Bison Removed\nRelative Percent Cover\n') +
-  # scale_x_continuous(expand=c(0,0), limits=c(0.5,17), breaks=seq(0,17,5)) +
-  # scale_y_continuous(expand=c(0,0), limits=c(0,60), breaks=seq(0,60,10)) +
-  # geom_text(aes(y=avg_cover+1.2, x=rank+0.1, label=spp_name), hjust='left', vjust='center', angle=90, size=4) +
-  expand_limits(y=30, x=90)
-#export at 1400x400
-
-ggplot(data=subset(rankAbundance, bison_ws=='B::N4B', avg_cover>0), aes(x=rank, y=avg_cover)) +
-  geom_line() +
-  geom_point(aes(colour=lifeform2, shape=growthform), size=3) +
-  scale_color_manual(labels=c("Forb", "Graminoid", "Woody"), values=c('#DE8C00', '#009CC0', '#83431E')) +
-  scale_shape_discrete(labels=c("Annual", "Biennial", "Perennial"))+
-  xlab('') +
-  ylab('N4B Bison\nRelative Percent Cover\n') +
-  # scale_x_continuous(expand=c(0,0), limits=c(0.5,17), breaks=seq(0,17,5)) +
-  # scale_y_continuous(expand=c(0,0), limits=c(0,60), breaks=seq(0,60,10)) +
-  # geom_text(aes(y=avg_cover+1.2, x=rank+0.1, label=spp_name), hjust='left', vjust='center', angle=90, size=4) +
-  expand_limits(y=40, x=90)
-#export at 1400x400
-
-ggplot(data=subset(rankAbundance, bison_ws=='X::N4B', avg_cover>0), aes(x=rank, y=avg_cover)) +
-  geom_line() +
-  geom_point(aes(colour=lifeform2, shape=growthform), size=3) +
-  scale_color_manual(labels=c("Forb", "Graminoid", "Woody"), values=c('#DE8C00', '#009CC0', '#83431E')) +
-  scale_shape_discrete(labels=c("Annual", "Biennial", "Perennial"))+
-  xlab('') +
-  ylab('N4B Bison Removed\nRelative Percent Cover\n') +
-  # scale_x_continuous(expand=c(0,0), limits=c(0.5,17), breaks=seq(0,17,5)) +
-  # scale_y_continuous(expand=c(0,0), limits=c(0,60), breaks=seq(0,60,10)) +
-  # geom_text(aes(y=avg_cover+1.2, x=rank+0.1, label=spp_name), hjust='left', vjust='center', angle=90, size=4) +
-  expand_limits(y=40, x=90)
-#export at 1400x400
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# #finding the most frequent species across all plots and years for updating the datasheets
+# ##### finding the most frequent species across all plots and years for updating the datasheets #####
 # freq <- spAll%>%
 #   mutate(genus_species=paste(genus,species, sep='_')) %>%
 #   filter(max_cover>0, genus_species!='NA_NA') %>%
