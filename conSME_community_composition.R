@@ -3,6 +3,7 @@
 ##
 ##  Author: Kimberly Komatsu
 ##  Date created: December 8, 2021
+##  Modified by: Allison Louthan January 16, 2025
 ################################################################################
 
 library(codyn)
@@ -10,8 +11,10 @@ library(nlme)
 library(emmeans)
 library(vegan)
 library(tidyverse)
+user <- "AL" # change based on your initials to deal with directory issues
 
-setwd('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\data')
+
+if (user== "KK"){setwd('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\data')}
 
 
 ##### functions #####
@@ -48,9 +51,10 @@ barGraphStats <- function(data, variable, byFactorNames) {
 
 
 ##### data #####
-trt <- read.csv('conSME_treatments.csv')
+trt <- read.csv('data/conSME_treatments.csv')
 
-sp2018 <- read.csv('species composition\\ConSME_species composition_2018.csv')
+if (user== "KK") {
+  sp2018 <- read.csv('species composition\\ConSME_species composition_2018.csv')
 sp2019 <- read.csv('species composition\\ConSME_species composition_2019.csv')
 sp2020 <- read.csv('species composition\\ConSME_species composition_2020.csv') %>%
   select(-X, -taxa)
@@ -70,8 +74,29 @@ spAll <- rbind(sp2018,sp2019,sp2020,sp2021,sp2022,sp2023) %>%
   left_join(read.csv('species composition\\PPS011_new KNZ spp list.csv')) %>%
   filter(gen %notin% c('litter', 'rock', 'dung', 'bare_ground', 'bison_trail')) %>%
   mutate(genus_species=paste(genus, species, sep='_'))
-
-
+}
+if (user == "AL"){
+  sp2018 <- read.csv('data/species composition/ConSME_species composition_2018.csv')
+  sp2019 <- read.csv('data/species composition/ConSME_species composition_2019.csv')
+  sp2020 <- read.csv('data/species composition/ConSME_species composition_2020.csv') %>%
+    select(-X, -taxa)
+  sp2021 <- read.csv('data/species composition/ConSME_species composition_2021.csv') %>%
+    select(-taxa, -flw_cover, -flw_number)
+  sp2022 <- read.csv('data/species composition/ConSME_species composition_2022.csv') %>% 
+    select(-taxa) %>% 
+    filter(!(is.na(cover)))
+  sp2023 <- read.csv('data/species composition/ConSME_species composition_2023.csv') %>% 
+    select(-taxa, -flowernum) %>% 
+    filter(!(is.na(cover)), cover>0)
+  
+  spAll <- rbind(sp2018,sp2019,sp2020,sp2021,sp2022,sp2023) %>%
+    group_by(year, watershed, block, plot, sppnum) %>%
+    summarise(max_cover=max(cover)) %>%
+    ungroup() %>%
+    left_join(read.csv('data/species composition/PPS011_new KNZ spp list.csv')) %>%
+    filter(gen %notin% c('litter', 'rock', 'dung', 'bare_ground', 'bison_trail')) %>%
+    mutate(genus_species=paste(genus, species, sep='_'))
+}
 ##### relative cover #####
 totCover <- spAll %>%
   group_by(year, watershed, block, plot) %>%
@@ -93,6 +118,7 @@ commMetrics <- community_structure(relCover, time.var='year', abundance.var='rel
   left_join(trt) %>% 
   mutate(ws_label=ifelse(watershed=='N1A', 'Annual', '4 Year'),
          experiment_year=year-2018)
+write.csv(commMetrics, file='derived_data/02commMetrics.csv')
 
 hist(log(commMetrics$richness)) #looks as good as we can get!
 shapiro.test(log(commMetrics$richness))
@@ -344,7 +370,7 @@ ggplot(BC_NMDS_Graph, aes(x=MDS1, y=MDS2, color=group,linetype = group, shape = 
   xlab("NMDS1")+ 
   ylab("NMDS2")+ 
   theme(axis.text.x=element_text(size=24, color = "black"), axis.text.y = element_text(size = 24, color = "black"), legend.text = element_text(size = 24))
-# ggsave(file='C:\\Users\\kjkomatsu\\Smithsonian Dropbox\\Kimberly Komatsu\\konza projects\\conSME\\figures\\2025\\Fig S2_NMDSbison2023.png', width=10, height=8, units='in', dpi=300, bg='white')
+# if (user= "KK"){ggsave(file='C:\\Users\\kjkomatsu\\Smithsonian Dropbox\\Kimberly Komatsu\\konza projects\\conSME\\figures\\2025\\Fig S2_NMDSbison2023.png', width=10, height=8, units='in', dpi=300, bg='white')}
 
 
 ##### simper #####

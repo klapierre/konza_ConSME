@@ -3,6 +3,7 @@
 ##
 ##  Author: Kimberly Komatsu
 ##  Date created: December 8, 2021
+##  Modified by: Allison Louthan January 22, 2025
 ################################################################################
 
 library(PerformanceAnalytics)
@@ -12,7 +13,10 @@ library(gridExtra)
 library(cowplot)
 library(tidyverse)
 
-setwd('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\data') #desktop
+user <- "AL" # change based on your initials to deal with directory issues
+
+
+if (user== "KK"){setwd('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\data') }#desktop
 
 
 #set options
@@ -46,8 +50,8 @@ barGraphStats <- function(data, variable, byFactorNames) {
 
 
 ##### data #####
-trt <- read.csv('conSME_treatments.csv')
-
+trt <- read.csv('data/conSME_treatments.csv')
+if (user== "KK") {
 biomass2019 <- read.csv('biomass\\conSME_biomass_2019.csv') %>%
   mutate(pdead=0)
 biomass2020 <- read.csv('biomass\\conSME_biomass_2020.csv') %>%
@@ -68,7 +72,30 @@ biomass2022 <- read.csv('biomass\\conSME_biomass_2022_corrected.csv') %>%
 biomass2023 <- read.csv('biomass\\conSME_biomass_2023.csv') %>% 
   mutate(experiment='conSME') %>% 
   select(year, experiment, watershed, block, plot, strip, gram, forb, woody, pdead, notes)
-  
+}
+
+if (user== "AL") {
+  biomass2019 <- read.csv('data/biomass/conSME_biomass_2019.csv') %>%
+    mutate(pdead=0)
+  biomass2020 <- read.csv('data/biomass/conSME_biomass_2020.csv') %>%
+    mutate(drop=ifelse(block=='I'&plot==6&strip==1, 1, 0)) %>% #drop missing sample
+    filter(drop!=1) %>%
+    select(-drop)
+  biomass2021 <- read.csv('data/biomass/conSME_biomass_2021.csv') %>%
+    mutate(experiment='conSME') %>%
+    rename(gram=grass) %>%
+    select(-date) %>%
+    filter(notes!='no biomass in any bag') #filter out missing sample
+  biomass2022 <- read.csv('data/biomass/conSME_biomass_2022_corrected.csv') %>%
+    mutate(experiment='conSME') %>%
+    rename(gram=grass) %>%
+    filter(!is.na(strip)) %>% 
+    mutate(year=2022) %>% 
+    select(year, experiment, watershed, block, plot, strip, gram, forb, woody, pdead, notes)
+  biomass2023 <- read.csv('data/biomass/conSME_biomass_2023.csv') %>% 
+    mutate(experiment='conSME') %>% 
+    select(year, experiment, watershed, block, plot, strip, gram, forb, woody, pdead, notes)
+}
 biomass <- rbind(biomass2019, biomass2020, biomass2021, biomass2022, biomass2023) %>%
   rename(project_name=experiment) %>%
   left_join(trt) %>%
@@ -88,6 +115,7 @@ biomassMean <- biomass %>%
             pdead=mean(pdead), total=mean(total)) %>% 
   ungroup()
 
+if (user== "AL") {write.csv(biomassMean, file='derived_data/01biomassMean.csv')}
 # #subsetting out the first year of trts, which is different in patterns from all subsequent years
 # biomassLater <- biomassMean %>%
 #   filter(year!=2019)
@@ -114,15 +142,15 @@ biomassMean <- biomass %>%
 
 
 ##### ANOVA - total biomass #####
-summary(totBiomassModel <- lme(total ~ watershed*as.factor(year)*invertebrates*bison + 
-                                       watershed*as.factor(year)*invertebrates*small_mammal,
+summary(totBiomassModel <- lme(total ~ watershed*year*invertebrates*bison + 
+                                       watershed*year*invertebrates*small_mammal,
                                data=subset(biomassMean, year<2023),
                                random=~1|block/trt,
                                correlation=corCompSymm(form=~year|block/trt), 
                                control=lmeControl(returnObject=T)))
 anova.lme(totBiomassModel, type='sequential') 
-emmeans(totBiomassModel, ~bison*invertebrates*as.factor(year)*watershed)
-contrast(emmeans(totBiomassModel, pairwise~as.factor(year)*watershed*bison*invertebrates), "consec", simple = "each", combine = TRUE, adjust = "mvt") #ws*year*bison, year*small mammal, year*invert*bison and ws*year*bison effects, marginal ws*year*invert
+emmeans(totBiomassModel, ~bison*invertebrates*year*watershed)
+contrast(emmeans(totBiomassModel, pairwise~year*watershed*bison*invertebrates), "consec", simple = "each", combine = TRUE, adjust = "mvt") #ws*year*bison, year*small mammal, year*invert*bison and ws*year*bison effects, marginal ws*year*invert
 
 #figure - total biomass ws*bison*year
 biomassFig1a <- ggplot(data=barGraphStats(data=biomassMean, variable="total", byFactorNames=c("bison", "ws_label", "year")), aes(x=bison, y=mean, fill=bison)) +
@@ -136,7 +164,7 @@ biomassFig1a <- ggplot(data=barGraphStats(data=biomassMean, variable="total", by
         legend.position='none', strip.text=element_text(size=30)) +
   coord_cartesian(ylim=c(0,800)) +
   facet_grid(cols=vars(year), rows=vars(ws_label))
-# ggsave(file='C:\\Users\\kjkomatsu\\Smithsonian Dropbox\\Kimberly Komatsu\\konza projects\\conSME\\figures\\2025\\Fig A_biomass_wsYearBison.png', width=12, height=10, units='in', dpi=300, bg='white')
+# if (user= "KK") {ggsave(file='C:\\Users\\kjkomatsu\\Smithsonian Dropbox\\Kimberly Komatsu\\konza projects\\conSME\\figures\\2025\\Fig A_biomass_wsYearBison.png', width=12, height=10, units='in', dpi=300, bg='white')}
 
 #figure - total biomass small_mammal*year
 biomassSmallMammalTemp <- biomassMean %>% mutate(ws2='ws')
@@ -151,7 +179,7 @@ biomassFig1b <- ggplot(data=barGraphStats(data=biomassSmallMammalTemp, variable=
         strip.text=element_text(size=30)) +
   coord_cartesian(ylim=c(0,800)) +
   facet_grid(cols=vars(year), rows=vars(ws2))
-# ggsave(file='C:\\Users\\kjkomatsu\\Smithsonian Dropbox\\Kimberly Komatsu\\konza projects\\conSME\\figures\\2025\\Fig B_biomass_wsYearSmallMammal.png', width=12, height=10, units='in', dpi=300, bg='white')
+# if (user= "KK") {ggsave(file='C:\\Users\\kjkomatsu\\Smithsonian Dropbox\\Kimberly Komatsu\\konza projects\\conSME\\figures\\2025\\Fig B_biomass_wsYearSmallMammal.png', width=12, height=10, units='in', dpi=300, bg='white')}
 
 #figure - total biomass year*bison*invert
 biomassInvertTemp <- biomassMean %>% mutate(ws2='ws')
@@ -170,7 +198,7 @@ biomassFig1c <- ggplot(data=barGraphStats(data=biomassInvertTemp, variable="tota
   coord_cartesian(ylim=c(0,800)) +
   facet_grid(cols=vars(year), rows=vars(ws2)) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-# ggsave(file='C:\\Users\\kjkomatsu\\Smithsonian Dropbox\\Kimberly Komatsu\\konza projects\\conSME\\figures\\2025\\Fig Ca_biomass_yearBisonInvert.png', width=12, height=6, units='in', dpi=300, bg='white')
+# if (user= "KK") {ggsave(file='C:\\Users\\kjkomatsu\\Smithsonian Dropbox\\Kimberly Komatsu\\konza projects\\conSME\\figures\\2025\\Fig Ca_biomass_yearBisonInvert.png', width=12, height=6, units='in', dpi=300, bg='white')}
 
 plot_grid(biomassFig1a, biomassFig1b, biomassFig1c, 
           align = "v", nrow = 3, rel_heights = c(5, 2.8, 3))
@@ -193,7 +221,7 @@ ggplot(data=barGraphStats(data=biomassMean, variable="total",
   # coord_cartesian(ylim=c(0,90)) +
   facet_grid(cols=vars(year), rows=vars(ws_label)) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-# ggsave(file='C:\\Users\\kjkomatsu\\Smithsonian Dropbox\\Kimberly Komatsu\\konza projects\\conSME\\figures\\2025\\Fig Cb_biomass_yearWatershedBisonInvert.png', width=12, height=10, units='in', dpi=300, bg='white')
+# if (user= "KK") {ggsave(file='C:\\Users\\kjkomatsu\\Smithsonian Dropbox\\Kimberly Komatsu\\konza projects\\conSME\\figures\\2025\\Fig Cb_biomass_yearWatershedBisonInvert.png', width=12, height=10, units='in', dpi=300, bg='white')}
 
 
 
@@ -294,7 +322,7 @@ summary(gramBiomassModel <- lme(gram~watershed*year*invertebrates*bison +
                                correlation=corCompSymm(form=~year|block/trt), 
                                control=lmeControl(returnObject=T)))
 anova.lme(gramBiomassModel, type='sequential') 
-contrast(emmeans(gramBiomassModel, pairwise~watershed*as.factor(year)*bison), "consec", simple = "each", combine = TRUE, adjust = "mvt")
+contrast(emmeans(gramBiomassModel, pairwise~watershed*year*bison), "consec", simple = "each", combine = TRUE, adjust = "mvt")
 
 #figure - total biomass ws*bison*year
 gramFig3a <- ggplot(data=barGraphStats(data=biomassMean, variable="gram", byFactorNames=c("bison", "ws_label", "year")), aes(x=bison, y=mean, fill=bison)) +
@@ -495,3 +523,6 @@ summary(pdeadBiomassN4BModel <- lme(pdead~year*invertebrates*bison +
                                   correlation=corCompSymm(form=~year|block/trt), 
                                   control=lmeControl(returnObject=T)))
 anova.lme(pdeadBiomassN4BModel, type='sequential') 
+
+if (user== "AL") {save(totBiomassModel, gramBiomassModel, forbBiomassModel, woodyBiomassModel, 
+                       file='derived_data/01biomass_models.csv')}
