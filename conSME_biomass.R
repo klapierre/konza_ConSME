@@ -13,10 +13,10 @@ library(gridExtra)
 library(cowplot)
 library(tidyverse)
 
-user <- "AL" # change based on your initials to deal with directory issues
+user <- "KK" # change based on your initials to deal with directory issues
 
 
-if (user== "KK"){setwd('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\data') }#desktop
+if (user== "KK"){setwd('C:\\Users\\kjkomatsu\\Smithsonian Dropbox\\Kimberly Komatsu\\konza projects\\conSME\\data') }#desktop
 
 
 #set options
@@ -50,7 +50,8 @@ barGraphStats <- function(data, variable, byFactorNames) {
 
 
 ##### data #####
-trt <- read.csv('data/conSME_treatments.csv')
+trt <- read.csv('conSME_treatments.csv')
+
 if (user== "KK") {
 biomass2019 <- read.csv('biomass\\conSME_biomass_2019.csv') %>%
   mutate(pdead=0)
@@ -96,6 +97,7 @@ if (user== "AL") {
     mutate(experiment='conSME') %>% 
     select(year, experiment, watershed, block, plot, strip, gram, forb, woody, pdead, notes)
 }
+
 biomass <- rbind(biomass2019, biomass2020, biomass2021, biomass2022, biomass2023) %>%
   rename(project_name=experiment) %>%
   left_join(trt) %>%
@@ -142,11 +144,11 @@ if (user== "AL") {write.csv(biomassMean, file='derived_data/01biomassMean.csv')}
 
 
 ##### ANOVA - total biomass #####
-summary(totBiomassModel <- lme(total ~ watershed*year*invertebrates*bison + 
-                                       watershed*year*invertebrates*small_mammal,
+summary(totBiomassModel <- lme(total ~ watershed*as.factor(year)*invertebrates*bison + 
+                                       watershed*as.factor(year)*invertebrates*small_mammal,
                                data=subset(biomassMean, year<2023),
                                random=~1|block/trt,
-                               correlation=corCompSymm(form=~year|block/trt), 
+                               correlation=corAR1(form=~year|block/trt), 
                                control=lmeControl(returnObject=T)))
 anova.lme(totBiomassModel, type='sequential') 
 emmeans(totBiomassModel, ~bison*invertebrates*year*watershed)
@@ -285,20 +287,20 @@ invertebrateBiomassResponse3 <- invertebrateBiomassResponse %>%
 #invert consumption: -8% of biomass in presence of bison in annual burn, -1% in 4 yr
 
 #with bison
-summary(invertebrateBiomassModel <- lme(total~watershed*year*invertebrates,
+summary(invertebrateBiomassModel <- lme(total~watershed*as.factor(year)*invertebrates,
                                         data=subset(invertebrateBiomassResponse, comparison=='with bison'),
                                         random=~1|block/trt,
-                                        correlation=corCompSymm(form=~year|block/trt),
+                                        correlation=corAR1(form=~year|block/trt),
                                         control=lmeControl(returnObject=T)))
 anova.lme(invertebrateBiomassModel, type='sequential')
 emmeans(invertebrateBiomassModel, pairwise~invertebrates, adjust="tukey") #no effect
 
 #without bison
-summary(invertebrateBiomassModel <- lme(total~watershed*small_mammal*invertebrates*year,
+summary(invertebrateBiomassModel <- lme(total~watershed*small_mammal*invertebrates*as.factor(year),
                                         data=subset(invertebrateBiomassResponse,
                                                     comparison=='without bison'),
                                         random=~1|block/trt,
-                                        correlation=corCompSymm(form=~year|block/trt),
+                                        correlation=corAR1(form=~year|block/trt),
                                         control=lmeControl(returnObject=T)))
 anova.lme(invertebrateBiomassModel, type='sequential')
 emmeans(invertebrateBiomassModel, pairwise~invertebrates, adjust="tukey") #marignally significant invert effect
@@ -315,11 +317,11 @@ ggplot(data=barGraphStats(data=subset(invertebrateBiomassResponse, comparison=='
 
 
 ##### ANOVA - graminoid biomass #####
-summary(gramBiomassModel <- lme(gram~watershed*year*invertebrates*bison + 
-                                watershed*year*invertebrates*small_mammal,
+summary(gramBiomassModel <- lme(gram~watershed*as.factor(year)*invertebrates*bison + 
+                                watershed*as.factor(year)*invertebrates*small_mammal,
                                data=biomassMean,
                                random=~1|block/trt,
-                               correlation=corCompSymm(form=~year|block/trt), 
+                               correlation=corAR1(form=~year|block/trt), 
                                control=lmeControl(returnObject=T)))
 anova.lme(gramBiomassModel, type='sequential') 
 contrast(emmeans(gramBiomassModel, pairwise~watershed*year*bison), "consec", simple = "each", combine = TRUE, adjust = "mvt")
@@ -359,11 +361,11 @@ plot_grid(gramFig3a, gramFig3b,  nrow = 2, rel_heights = c(5, 2.8))
 
 
 ##### ANOVA - forb biomass #####
-summary(forbBiomassModel <- lme(forb~watershed*year*invertebrates*bison + 
-                                watershed*year*invertebrates*small_mammal,
+summary(forbBiomassModel <- lme(forb~watershed*as.factor(year)*invertebrates*bison + 
+                                watershed*as.factor(year)*invertebrates*small_mammal,
                                 data=biomassMean,
                                 random=~1|block/trt,
-                                correlation=corCompSymm(form=~year|block/trt), 
+                                correlation=corAR1(form=~year|block/trt), 
                                 control=lmeControl(returnObject=T)))
 anova.lme(forbBiomassModel, type='sequential') 
 emmeans(forbBiomassModel, pairwise~trt, adjust="tukey")
@@ -392,10 +394,10 @@ smallMammalBiomassResponse2 <- invertebrateBiomassResponse %>%
 #invertebrates remove 22% of forb biomass in the absence of bison (can't say about with bison present, due to fencing nestedness)
 
 #without bison
-summary(forbBiomassModel <- lme(forb~watershed*year*invertebrates*small_mammal,
+summary(forbBiomassModel <- lme(forb~watershed*as.factor(year)*invertebrates*small_mammal,
                                 data=subset(biomassMean, !(trt %in% c('BSX', 'BSI'))),
                                 random=~1|block/trt,
-                                correlation=corCompSymm(form=~year|block/trt), 
+                                correlation=corAR1(form=~year|block/trt), 
                                 control=lmeControl(returnObject=T)))
 anova.lme(forbBiomassModel, type='sequential') 
 emmeans(forbBiomassModel, pairwise~invertebrates*small_mammal, adjust="tukey")
@@ -504,23 +506,36 @@ plot_grid(forbBiomassFigAa, forbBiomassFigCc, arrangeGrob(forbBiomassFigBb, null
 
 
 ##### ANOVA - woody biomass #####
-summary(woodyBiomassModel <- lme(woody~watershed*year*invertebrates*bison + 
-                                 watershed*year*invertebrates*small_mammal,
-                                 data=biomassMean,
+summary(woodyBiomassModel <- lme(woody~watershed*as.factor(year)*invertebrates*bison + 
+                                 watershed*as.factor(year)*invertebrates*small_mammal,
+                                 data=subset(biomassMean, block!='J'),
                                  random=~1|block/trt,
-                                 correlation=corCompSymm(form=~year|block/trt), 
+                                 correlation=corAR1(form=~year|block/trt), 
                                  control=lmeControl(returnObject=T)))
 anova.lme(woodyBiomassModel, type='sequential') 
+
+ggplot(data=barGraphStats(data=subset(biomassMean, !(trt %in% c('BSX', 'BSI'))), variable="woody", byFactorNames=c("small_mammal", "ws_label", "year")), aes(x=small_mammal, y=mean, fill=small_mammal)) +
+  geom_bar(position=position_dodge(0.1), size=2, stat="identity", color='black') +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.1), size=2) +
+  ylab(expression(paste('Forb Biomass (g m'^'-2',')'))) +
+  scale_fill_manual(values=c('limegreen','orange')) +
+  # coord_cartesian(ylim=c(0,150)) +
+  # scale_x_discrete(limits=c('BSI', 'BSX', 'XSI', 'XXI', 'XSX', 'XXX')) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=30), 
+        axis.title.y=element_text(size=30, angle=90, vjust=1, margin=margin(r=15)), 
+        axis.text.y=element_text(size=26), legend.position='none', 
+        strip.text=element_text(size=30))  +
+  facet_grid(cols=vars(year),rows=vars(ws_label))
 
 
 ##### ANOVA - pdead biomass #####
 #N4B pdead biomass
-summary(pdeadBiomassN4BModel <- lme(pdead~year*invertebrates*bison + 
-                                    year*invertebrates*small_mammal,
+summary(pdeadBiomassN4BModel <- lme(pdead~as.factor(year)*invertebrates*bison + 
+                                          as.factor(year)*invertebrates*small_mammal,
                                   data=subset(biomassMean, watershed=='N4B' & 
                                               year>2019 & year<2023), #burned in 2019 and 2023
                                   random=~1|block/trt,
-                                  correlation=corCompSymm(form=~year|block/trt), 
+                                  correlation=corAR1(form=~year|block/trt), 
                                   control=lmeControl(returnObject=T)))
 anova.lme(pdeadBiomassN4BModel, type='sequential') 
 

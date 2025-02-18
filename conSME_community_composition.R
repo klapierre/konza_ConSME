@@ -11,10 +11,11 @@ library(nlme)
 library(emmeans)
 library(vegan)
 library(tidyverse)
-user <- "AL" # change based on your initials to deal with directory issues
+
+user <- "KK" # change based on your initials to deal with directory issues
 
 
-if (user== "KK"){setwd('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\data')}
+if (user== "KK"){setwd('C:\\Users\\kjkomatsu\\Smithsonian Dropbox\\Kimberly Komatsu\\konza projects\\conSME\\data')}
 
 
 ##### functions #####
@@ -51,21 +52,21 @@ barGraphStats <- function(data, variable, byFactorNames) {
 
 
 ##### data #####
-trt <- read.csv('data/conSME_treatments.csv')
+trt <- read.csv('conSME_treatments.csv')
 
 if (user== "KK") {
   sp2018 <- read.csv('species composition\\ConSME_species composition_2018.csv')
-sp2019 <- read.csv('species composition\\ConSME_species composition_2019.csv')
-sp2020 <- read.csv('species composition\\ConSME_species composition_2020.csv') %>%
-  select(-X, -taxa)
-sp2021 <- read.csv('species composition\\ConSME_species composition_2021.csv') %>%
-  select(-taxa, -flw_cover, -flw_number)
-sp2022 <- read.csv('species composition\\ConSME_species composition_2022.csv') %>% 
-  select(-taxa) %>% 
-  filter(!(is.na(cover)))
-sp2023 <- read.csv('species composition\\ConSME_species composition_2023.csv') %>% 
-  select(-taxa, -flowernum) %>% 
-  filter(!(is.na(cover)), cover>0)
+  sp2019 <- read.csv('species composition\\ConSME_species composition_2019.csv')
+  sp2020 <- read.csv('species composition\\ConSME_species composition_2020.csv') %>%
+            select(-X, -taxa)
+  sp2021 <- read.csv('species composition\\ConSME_species composition_2021.csv') %>%
+            select(-taxa, -flw_cover, -flw_number)
+  sp2022 <- read.csv('species composition\\ConSME_species composition_2022.csv') %>% 
+            select(-taxa) %>% 
+            filter(!(is.na(cover)))
+  sp2023 <- read.csv('species composition\\ConSME_species composition_2023.csv') %>% 
+            select(-taxa, -flowernum) %>% 
+            filter(!(is.na(cover)), cover>0)
 
 spAll <- rbind(sp2018,sp2019,sp2020,sp2021,sp2022,sp2023) %>%
   group_by(year, watershed, block, plot, sppnum) %>%
@@ -97,6 +98,7 @@ if (user == "AL"){
     filter(gen %notin% c('litter', 'rock', 'dung', 'bare_ground', 'bison_trail')) %>%
     mutate(genus_species=paste(genus, species, sep='_'))
 }
+
 ##### relative cover #####
 totCover <- spAll %>%
   group_by(year, watershed, block, plot) %>%
@@ -118,7 +120,7 @@ commMetrics <- community_structure(relCover, time.var='year', abundance.var='rel
   left_join(trt) %>% 
   mutate(ws_label=ifelse(watershed=='N1A', 'Annual', '4 Year'),
          experiment_year=year-2018)
-write.csv(commMetrics, file='derived_data/02commMetrics.csv')
+# write.csv(commMetrics, file='derived_data/02commMetrics.csv')
 
 hist(log(commMetrics$richness)) #looks as good as we can get!
 shapiro.test(log(commMetrics$richness))
@@ -130,16 +132,27 @@ shapiro.test(log(commMetrics$Evar))
 
 
 ##### richness response #####
-summary(richModel <- lme(log(richness)~watershed*year*invertebrates*bison + watershed*year*invertebrates*small_mammal,
+summary(richModel <- lme(log(richness)~watershed*as.factor(year)*invertebrates*bison + watershed*as.factor(year)*invertebrates*small_mammal,
                                data=subset(commMetrics, year>2018),
                                random=~1|block/trt,
-                               correlation=corCompSymm(form=~year|block/trt), 
+                               correlation=corAR1(form=~year|block/trt), 
                                control=lmeControl(returnObject=T)))
 anova.lme(richModel, type='sequential') 
 emmeans(richModel, pairwise~year*watershed*bison, adjust="tukey")
 emmeans(richModel, pairwise~invertebrates, adjust="tukey")
 
-#figure - richness by watershed, bison
+#figure - richness bison by year*ws, either put in supplement or don't include at all
+richnessBisonSupplementalFig <- ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="richness", byFactorNames=c("bison", "year", "ws_label")), aes(x=bison, y=mean, fill=bison)) +
+  geom_bar(position=position_dodge(0.1), size=2, stat="identity", color='black') +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.1), size=2) +
+  # coord_cartesian(ylim=c(0,23)) +
+  ylab(expression(paste('Plant Species\nRichness'))) +
+  scale_fill_manual(values=c('lightgrey', 'limegreen')) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=35), axis.title.y=element_text(size=35, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=35), legend.position='none', legend.justification=c(0,1), strip.text=element_text(size=35)) +
+  facet_grid(cols=vars(year), rows=vars(ws_label))
+# ggsave('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\figures\\2023\\invert_richness.png', width=4, height=7, units='in', dpi=600, bg='white')
+
+#figure - richness by bison and ws (include in main text and show year interaction in a supplement?)
 richnessBisonFig <- ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="richness", byFactorNames=c("bison", 'watershed')), aes(x=watershed, y=mean, fill=bison)) +
   geom_bar(position=position_dodge(0.9), size=2, stat="identity", color='black') +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, position=position_dodge(0.9), size=2) +
@@ -148,7 +161,7 @@ richnessBisonFig <- ggplot(data=barGraphStats(data=subset(commMetrics, year>2018
   coord_cartesian(ylim=c(0,30)) +
   scale_fill_manual(values=c('lightgrey', 'limegreen')) +
   scale_x_discrete(labels=c('Annual', '4 Year')) +
-  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=35), axis.title.y=element_text(size=35, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=35), legend.position=c(0.98, 0.98), legend.justification=c(1,1), strip.text=element_text(size=35), legend.text=element_text(size=35)) 
+  theme(axis.title.x=element_blank(), axis.text.x=element_text(size=35), axis.title.y=element_text(size=35, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=35), legend.position=c(0.98, 0.98), legend.justification=c(1,1), strip.text=element_text(size=35), legend.text=element_text(size=35))
 # ggsave('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\figures\\2023\\bison_richness.png', width=7, height=7, units='in', dpi=600, bg='white')
 
 # #figure - richness by year, bison - don't include figure (it's obv from stats)
@@ -214,7 +227,7 @@ commMetricsMeans <- commMetrics %>%
 
   
 ##### evenness response #####
-summary(evarModel <- lme(log(Evar)~watershed*year*invertebrates*bison + watershed*year*invertebrates*small_mammal,
+summary(evarModel <- lme(log(Evar)~watershed*as.factor(year)*invertebrates*bison + watershed*as.factor(year)*invertebrates*small_mammal,
                          data=subset(commMetrics, year>2018),
                          random=~1|block/trt,
                          correlation=corCompSymm(form=~year|block/trt), 
