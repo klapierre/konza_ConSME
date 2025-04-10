@@ -18,6 +18,7 @@ glmer_converged <- function(model_function){
   !any(grepl("failed to converge", model_function@optinfo$conv$lme4$messages))
 }
 
+
 # data preparation----
 if (user == "AL"){
   sp2018 <- read.csv('data/species composition/ConSME_species composition_2018.csv')
