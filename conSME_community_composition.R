@@ -3,7 +3,7 @@
 ##
 ##  Author: Kimberly Komatsu
 ##  Date created: December 8, 2021
-##  Modified by: Allison Louthan January 16, 2025
+##  Modified by: Allison Louthan Feb 26, 2025
 ################################################################################
 
 library(codyn)
@@ -12,7 +12,7 @@ library(emmeans)
 library(vegan)
 library(tidyverse)
 
-user <- "KK" # change based on your initials to deal with directory issues
+user <- "AL" # change based on your initials to deal with directory issues. options= "KK", "AL
 
 
 if (user== "KK"){setwd('C:\\Users\\kjkomatsu\\Smithsonian Dropbox\\Kimberly Komatsu\\konza projects\\conSME\\data')}
@@ -52,9 +52,10 @@ barGraphStats <- function(data, variable, byFactorNames) {
 
 
 ##### data #####
-trt <- read.csv('conSME_treatments.csv')
+
 
 if (user== "KK") {
+  trt <- read.csv('conSME_treatments.csv')
   sp2018 <- read.csv('species composition\\ConSME_species composition_2018.csv')
   sp2019 <- read.csv('species composition\\ConSME_species composition_2019.csv')
   sp2020 <- read.csv('species composition\\ConSME_species composition_2020.csv') %>%
@@ -77,6 +78,7 @@ spAll <- rbind(sp2018,sp2019,sp2020,sp2021,sp2022,sp2023) %>%
   mutate(genus_species=paste(genus, species, sep='_'))
 }
 if (user == "AL"){
+  trt <- read.csv('data/conSME_treatments.csv')
   sp2018 <- read.csv('data/species composition/ConSME_species composition_2018.csv')
   sp2019 <- read.csv('data/species composition/ConSME_species composition_2019.csv')
   sp2020 <- read.csv('data/species composition/ConSME_species composition_2020.csv') %>%
@@ -120,7 +122,6 @@ commMetrics <- community_structure(relCover, time.var='year', abundance.var='rel
   left_join(trt) %>% 
   mutate(ws_label=ifelse(watershed=='N1A', 'Annual', '4 Year'),
          experiment_year=year-2018)
-# write.csv(commMetrics, file='derived_data/02commMetrics.csv')
 
 hist(log(commMetrics$richness)) #looks as good as we can get!
 shapiro.test(log(commMetrics$richness))
@@ -150,6 +151,7 @@ richnessBisonSupplementalFig <- ggplot(data=barGraphStats(data=subset(commMetric
   scale_fill_manual(values=c('lightgrey', 'limegreen')) +
   theme(axis.title.x=element_blank(), axis.text.x=element_text(size=35), axis.title.y=element_text(size=35, angle=90, vjust=1, margin=margin(r=15)), axis.text.y=element_text(size=35), legend.position='none', legend.justification=c(0,1), strip.text=element_text(size=35)) +
   facet_grid(cols=vars(year), rows=vars(ws_label))
+
 # ggsave('C:\\Users\\kjkomatsu\\Dropbox (Smithsonian)\\konza projects\\conSME\\figures\\2023\\invert_richness.png', width=4, height=7, units='in', dpi=600, bg='white')
 
 #figure - richness by bison and ws (include in main text and show year interaction in a supplement?)
@@ -234,7 +236,7 @@ summary(evarModel <- lme(log(Evar)~watershed*as.factor(year)*invertebrates*bison
                          control=lmeControl(returnObject=T)))
 anova.lme(evarModel, type='sequential') 
 emmeans(evarModel, pairwise~year*trt*watershed, adjust="tukey")
-
+ if (user== "AL"){save(richModel,evarModel, file='derived_data/02comp_models.RData')}
 #figure - evenness by watershed, year, bison
 evennessBisonFig <- ggplot(data=barGraphStats(data=subset(commMetrics, year>2018), variable="Evar", byFactorNames=c("bison", 'ws_label', "year")), aes(x=bison, y=mean, fill=bison)) +
   geom_bar(position=position_dodge(0.9), size=2, stat="identity", color='black') +

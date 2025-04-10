@@ -3,7 +3,7 @@
 ##
 ##  Author: Kimberly Komatsu
 ##  Date created: December 8, 2021
-##  Modified by: Allison Louthan January 22, 2025
+##  Modified by: Allison Louthan Feb 26, 2025
 ################################################################################
 
 library(PerformanceAnalytics)
@@ -13,7 +13,7 @@ library(gridExtra)
 library(cowplot)
 library(tidyverse)
 
-user <- "KK" # change based on your initials to deal with directory issues
+user <- "AL" # change based on your initials to deal with directory issues. options: "KK", "AL"
 
 
 if (user== "KK"){setwd('C:\\Users\\kjkomatsu\\Smithsonian Dropbox\\Kimberly Komatsu\\konza projects\\conSME\\data') }#desktop
@@ -50,9 +50,11 @@ barGraphStats <- function(data, variable, byFactorNames) {
 
 
 ##### data #####
-trt <- read.csv('conSME_treatments.csv')
+
 
 if (user== "KK") {
+  
+  trt <- read.csv('conSME_treatments.csv')
 biomass2019 <- read.csv('biomass\\conSME_biomass_2019.csv') %>%
   mutate(pdead=0)
 biomass2020 <- read.csv('biomass\\conSME_biomass_2020.csv') %>%
@@ -76,6 +78,7 @@ biomass2023 <- read.csv('biomass\\conSME_biomass_2023.csv') %>%
 }
 
 if (user== "AL") {
+  trt <- read.csv('data/conSME_treatments.csv')
   biomass2019 <- read.csv('data/biomass/conSME_biomass_2019.csv') %>%
     mutate(pdead=0)
   biomass2020 <- read.csv('data/biomass/conSME_biomass_2020.csv') %>%
@@ -117,7 +120,6 @@ biomassMean <- biomass %>%
             pdead=mean(pdead), total=mean(total)) %>% 
   ungroup()
 
-if (user== "AL") {write.csv(biomassMean, file='derived_data/01biomassMean.csv')}
 # #subsetting out the first year of trts, which is different in patterns from all subsequent years
 # biomassLater <- biomassMean %>%
 #   filter(year!=2019)
@@ -540,4 +542,5 @@ summary(pdeadBiomassN4BModel <- lme(pdead~as.factor(year)*invertebrates*bison +
 anova.lme(pdeadBiomassN4BModel, type='sequential') 
 
 if (user== "AL") {save(totBiomassModel, gramBiomassModel, forbBiomassModel, woodyBiomassModel, 
-                       file='derived_data/01biomass_models.csv')}
+                       file='derived_data/01biomass_models.RData')}
+
