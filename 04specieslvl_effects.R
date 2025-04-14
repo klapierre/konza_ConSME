@@ -94,44 +94,42 @@ for (i in 1:length(sp_list_no_glm.nb_problems)){
 data_i <- all_transitions[which(all_transitions$genus_species== sp_list_no_glm.nb_problems[i]), ] 
 if (dim(data_i)[1]<260){                             
   coefficients_allsp[i, 1, ] <- NA
-  coefficients_allsp[i, 2, ] <- NA} else {
+  coefficients_allsp[i, 2, ] <- NA
+  } else {
 # NB for consistency with Kims analysis I am regressing cover (not change in cover!) against predictors
 # and using her same error structure
     data_i$trt <- as.factor(data_i$trt)
   data_i$trt <- relevel(data_i$trt, ref= "XXX")
   data_i$ year <- as.factor(data_i$year)
   data_i$ block <- as.factor(data_i$block)
+  options (warn=2)
+  
 my_mod <- try(lme4::glmer.nb(max_cover~watershed*trt + (1|block) + (1|year), 
                       #  (1|block/trt), # ideally, you would have this RE structure, plus year nested in there somehow, but the model does not converge even for Andropogon ger
                                 data=data_i ), silent=TRUE)
-if (class(my_mod)[1]== "try-error" || performance::check_singularity(my_mod) || !performance::check_convergence(my_mod)) { # if the most-complex model is a try-error, is singular or DN converge
-  my_mod <- try(lme4::glmer.nb(max_cover~watershed*trt + year + (1|block) , data=data_i ), silent= TRUE) # then fit a simpler model
-if (class(my_mod)[1]== "try-error" || performance::check_singularity(my_mod) || !performance::check_convergence(my_mod)) {  # if that model is singular or DN converge
-  options(warn= 2) # make sure warnings are converted to errors, and then
+options (warn=2)
+if (class(my_mod)[1]== "try-error" || isSingular(my_mod)) { # if the most-complex model is a try-error, is singular or DN converge
+   my_mod <- try(lme4::glmer.nb(max_cover~watershed*trt + year + (1|block) , data=data_i ), silent= TRUE) # then fit a simpler model
+if (class(my_mod)[1]== "try-error" || isSingular(my_mod)) {  # if that model is singular or DN converge
   my_mod <- try(MASS::glm.nb(max_cover~watershed*trt + year + block , data=data_i ), silent= TRUE) # use an even-simpler model-- take out RE
   if (class(my_mod)[1] == "try-error"){# if that model DN fit 
     my_mod <- try(MASS::glm.nb(max_cover~watershed*trt + block , data=data_i) , silent= TRUE)# use an even-simpler model that removes year effect
    if (class(my_mod)[1] == "try-error"){# if that model DN fit 
     try(my_mod <- MASS::glm.nb(max_cover~watershed*trt  , data=data_i), silent= TRUE)
     # use an even-simpler model that removes year & block effects. code will add i to glm.nb problems vector if this model failts to fit
-  }}
-  options (warn=0) # make sure warnings stay as warnings
-  }
-  if (class(my_mod)[1] == "try-error") {glm.nb_problems <- c(glm.nb_problems, i)} else {
-    
+  }} }} # ends the outer try-error loop
+options (warn=0) # make sure warnings stay as warnings 
+
+if (class(my_mod)[1] == "try-error") {glm.nb_problems <- c(glm.nb_problems, i)} else {
 if(class(my_mod)[1] == "negbin") {my_coefs <- coef(my_mod)} else  {my_coefs <-  lme4::fixef(my_mod)} 
   
   coef_present_wNA <- match(names(my_coefs), dimnames(coefficients_allsp)[[3]] )# which coefficients are actually present, put them in the correct order-- some might be missing
   coef_present <- na.omit(match(names(my_coefs), dimnames(coefficients_allsp)[[3]] ))# which coefficients are actually present, put them in the correct order-- some might be missing
   
-      coefficients_allsp[i, "coefficient",coef_present ] <-  my_coefs[which(!is.na(coef_present_wNA))]
-  coefficients_allsp[i, "P-val",coef_present ] <- summary(my_mod)$coefficients[which(!is.na(coef_present_wNA)),"Pr(>|z|)"]}
-}
-                                                          
-
-
-
-print(i)}
+  coefficients_allsp[i, "coefficient",coef_present ] <-  my_coefs[which(!is.na(coef_present_wNA))]
+  coefficients_allsp[i, "P-val",coef_present ] <- summary(my_mod)$coefficients[which(!is.na(coef_present_wNA)),"Pr(>|z|)"]} # ends the loop that says: if nothing works to fit this model, then add to problems list
+} # ends if dim<260 loop
+print(i)
 } # can safely ignore non-convergence or singularity warnings; they are handled within the loop; the loop will break if any singularity or convergene issues are problematic
 
 

@@ -1,9 +1,9 @@
 ################################################################################
-##  05demography.R: tests for herbivore effects on 3 forbs
+##  05demography_data_cleanup.R: cleans up data to test for consume effects on three forbs
 ##
 ##  Author: Allison Louthan
 ##  Date created: January 16, 2025
-##  Modified : Feb 26, 2025
+##  Modified : April 14, 2025
 # this code is adapted from: /Users/allisonlouthan/Dropbox/konza/watershed demography/paper 1/codes/paper codes/01_demodatacleanup.R
 ################################################################################
 
@@ -81,6 +81,8 @@ ecan_data_23$comm[grepl("disc", ecan_data_23$comm)]
 
 
 # combining the three years' data into one file ----
+amca_data_20 <- amca_data_20[,which(names(amca_data_20) != "meas")]
+
 sp_name <- c("amca", "kueu", "ecan")
 sp_measurements <- list (c(), 
                          c("n", "h", "f"), 
@@ -250,102 +252,13 @@ ecan_data$bison <- substr(ecan_data$watershed, 1, 1)
 ecan_data$fri <- substr(ecan_data$watershed, 2, 2)
 
 
-# the below code is not yet edited, just straight from the cleanup file-----
-# combining the three years' data for amca-----
-amca_data_20 <- amca_data_20[,which(names(amca_data_20) != "meas")]
 
-# testing to see if there are plants that came back alive & assign survival
-amca_data_20$plant_id <- paste(amca_data_20$watershed, amca_data_20$plant_id)
-amca_data_21$plant_id <- paste(amca_data_21$watershed, amca_data_21$plant_id)
-amca_data_22$plant_id <- paste(amca_data_22$watershed, amca_data_22$plant_id)
-amca_data_23$plant_id <- paste(amca_data_23$watershed, amca_data_23$plant_id)
-
-unique_plant_ids <- unique(c(amca_data_20$plant_id, amca_data_21$plant_id, amca_data_22$plant_id,amca_data_23$plant_id))
-
-for ( i in 1: length(unique_plant_ids)){ # cycles through all the individual plants of that particular species
-  alive_sequence <- c (
-    ifelse( length(amca_data_20$alive_startyear[which(amca_data_20$plant_id== unique_plant_ids[i] )])>0, amca_data_20$alive_startyear[which(amca_data_20$plant_id== unique_plant_ids[i] )], NA), 
-    ifelse( length(amca_data_21$alive_startyear[which(amca_data_21$plant_id== unique_plant_ids[i] )])>0, amca_data_21$alive_startyear[which(amca_data_21$plant_id== unique_plant_ids[i] )], NA), 
-    ifelse( length(amca_data_22$alive_startyear[which(amca_data_22$plant_id== unique_plant_ids[i] )])>0, amca_data_22$alive_startyear[which(amca_data_22$plant_id== unique_plant_ids[i] )], NA),
-    ifelse( length(amca_data_23$alive_startyear[which(amca_data_23$plant_id== unique_plant_ids[i] )])>0, amca_data_23$alive_startyear[which(amca_data_23$plant_id== unique_plant_ids[i] )], NA)
-    
-  )
-  if (sum(as.numeric(alive_sequence), na.rm= TRUE) != 0){ # if a plant was only measured once, as dead, this wil lbreak the code below and we need not do any replacing
-    zeros <- which(alive_sequence== 0 & !is.na(alive_sequence))
-    NAs <- which(is.na(alive_sequence))
-    ones <- which(alive_sequence== 1 & !is.na(alive_sequence))
-    # two rules-- these will work even if you have many years of data:
-    
-    # for any NA's or 0's with indices greater than the idex of the first 1, but less than the index of the last 1, chagne to 1. 
-    replace_with_ones <- NAs[data.table::between(NAs, min(ones), max(ones))]
-    replace_with_ones <- c(replace_with_ones, zeros[data.table::between(zeros, min(ones), max(ones))])
-    
-    # for the first zero index, if that is less than any 1 index, change all intervening indices to 1 (including the zero) 
-    replace_with_ones <- c(replace_with_ones, zeros[which(zeros< min(ones))])
-    
-    # then, making the actual chagnes in the dataset, adding rows if necessary...
-    if (length(replace_with_ones)>0){
-      if((1 %in% replace_with_ones) & (length(amca_data_20$alive_startyear[which(amca_data_20$plant_id== unique_plant_ids[i] )]) >0)){amca_data_20$alive_startyear[which(amca_data_20$plant_id== unique_plant_ids[i] )] <- 1}
-      if((1 %in% replace_with_ones) & (length(amca_data_20$alive_startyear[which(amca_data_20$plant_id== unique_plant_ids[i] )]) ==0)){
-        amca_data_20[nrow(amca_data_20) +1,] <- NA
-        amca_data_20[nrow(amca_data_20) +1,"plant_id"] <- unique_plant_ids[i]
-        amca_data_20[nrow(amca_data_20) +1,"alive_startyear"] <- 1 
-        amca_data_20[nrow(amca_data_20) +1,"startyear"] <- 2020
-      }
-      if((2 %in% replace_with_ones) & (length(amca_data_21$alive_startyear[which(amca_data_21$plant_id== unique_plant_ids[i] )]) >0)){amca_data_21$alive_startyear[which(amca_data_21$plant_id== unique_plant_ids[i] )] <- 1}
-      if((2 %in% replace_with_ones) & (length(amca_data_21$alive_startyear[which(amca_data_21$plant_id== unique_plant_ids[i] )]) ==0)){
-        amca_data_21[nrow(amca_data_21) +1,] <- NA
-        amca_data_21[nrow(amca_data_21) +1,"plant_id"] <- unique_plant_ids[i]
-        amca_data_21[nrow(amca_data_21) +1,"alive_startyear"] <- 1 
-        amca_data_21[nrow(amca_data_21) +1,"startyear"] <- 2021
-      }
-      if((3 %in% replace_with_ones) & (length(amca_data_22$alive_startyear[which(amca_data_22$plant_id== unique_plant_ids[i] )]) >0)){amca_data_22$alive_startyear[which(amca_data_22$plant_id== unique_plant_ids[i] )] <- 1}
-      if((3 %in% replace_with_ones) & (length(amca_data_22$alive_startyear[which(amca_data_22$plant_id== unique_plant_ids[i] )]) ==0)){
-        amca_data_22[nrow(amca_data_22) +1,] <- NA
-        amca_data_22[nrow(amca_data_22) +1,"plant_id"] <- unique_plant_ids[i]
-        amca_data_22[nrow(amca_data_22) +1,"alive_startyear"] <- 1 
-        amca_data_22[nrow(amca_data_22) +1,"startyear"] <- 2022
-      }
-      if((4 %in% replace_with_ones) & (length(amca_data_23$alive_startyear[which(amca_data_23$plant_id== unique_plant_ids[i] )]) >0)){amca_data_23$alive_startyear[which(amca_data_23$plant_id== unique_plant_ids[i] )] <- 1}
-      if((4 %in% replace_with_ones) & (length(amca_data_23$alive_startyear[which(amca_data_23$plant_id== unique_plant_ids[i] )]) ==0)){
-        amca_data_23[nrow(amca_data_23) +1,] <- NA
-        amca_data_23[nrow(amca_data_23) +1,"plant_id"] <- unique_plant_ids[i]
-        amca_data_23[nrow(amca_data_23) +1,"alive_startyear"] <- 1 
-        amca_data_23[nrow(amca_data_23) +1,"startyear"] <- 2023
-      }
-    }}
-}
-# need to make the final year of data, which is currently unfinished. including this last year becomes important when calculating recruitment later
-endingyear <- data.frame(matrix(nrow=0, ncol=9))
-colnames(endingyear) <- c("plant_id", "watershed", "H","N","D", "L_F", "note", "cov", "alive_startyear")
-endingyear$plant_id <- as.character(endingyear$plant_id)
-endingyear$watershed <- as.character(endingyear$watershed)
-
-amca_data_transition1 <- dplyr::full_join(amca_data_20,
-                                          amca_data_21[,c("plant_id", "watershed","H", "N","D", "L_F", "note", "cov", "alive_startyear")], by= c("plant_id", "watershed")) 
-amca_data_transition1$'H.x' <- NA
-names(amca_data_transition1)[which(names(amca_data_transition1) == "H")] <- "H.y"
-amca_data_21 <- amca_data_21[!(amca_data_21$plant_id== "N1A 284" & amca_data_21$mrk== "t0017"), ]
-amca_data_22 <- amca_data_22[!(amca_data_22$plant_id== "N1A 284" & amca_data_22$mrk== "t0017"), ]
-amca_data_transition2 <- dplyr::full_join(amca_data_21, 
-                                          amca_data_22[,c("plant_id", "watershed", "H","N","D", "L_F", "note", "cov", "alive_startyear")], by= c("plant_id", "watershed")) 
-amca_data_transition3 <- dplyr::full_join(amca_data_22, 
-                                          amca_data_23[,c("plant_id", "watershed", "H","N","D", "L_F", "note", "cov", "alive_startyear")], by= c("plant_id", "watershed"))
-amca_data_transition4 <- dplyr::full_join(amca_data_23, 
-                                          endingyear, by= c("plant_id", "watershed"))
-amca_data <- rbind(amca_data_transition1[which(!is.na(amca_data_transition1$startyear)),order(names(amca_data_transition1))], # this is.na term takes out those plants that were newly marked in the second year
-                   amca_data_transition2[which(!is.na(amca_data_transition2$startyear)),order(names(amca_data_transition2))], 
-                   amca_data_transition3[which(!is.na(amca_data_transition3$startyear)),order(names(amca_data_transition3))], 
-                   amca_data_transition4[which(!is.na(amca_data_transition4$startyear)),order(names(amca_data_transition4))])
-
+#amca
 # best measurement of biomass is h*s (r^2= 0.65), but you didn't measure h the first year
 # the first year you only measured d*s (r^2= 0.61)
 # not 100% clear what to do here. I'll just use d*s
 
 amca_data$biom_2 <- amca_data$biom_1 <- amca_data$f_1 <- amca_data$f_2 <-NA
-# fixing some errors found in the code:
-amca_data[which(amca_data$plant_id=="K2A 98" & amca_data$startyear== 2020 ), "D.y"] <- 7.75
-amca_data[which(amca_data$plant_id=="K2A 98" & amca_data$startyear== 2021 ), "D.x"] <- 7.75
 
 for (i in 1:dim(amca_data)[1]){
   amca_data$biom_1[i] <- sum(Numextract(amca_data$D.x[i])*Numextract(amca_data$N.x[i]))
@@ -378,19 +291,12 @@ ecan_data$sur_1_2[which(ecan_data$alive_1 ==1 & ecan_data$alive_2==1)] <- 1
 ecan_data$sur_1_2[which(ecan_data$alive_1 ==1 & ecan_data$alive_2==0)] <- 0
 if(length(which(ecan_data$alive_1 ==0 & ecan_data$alive_2==1))>0){stop("ecan alive_sequence has a 0, 1")}
 
-asob_data$sur_1_2 <- NA
-asob_data$sur_1_2[which(asob_data$alive_1 ==1 & asob_data$alive_2==1)] <- 1
-asob_data$sur_1_2[which(asob_data$alive_1 ==1 & asob_data$alive_2==0)] <- 0
-if(length(which(asob_data$alive_1 ==0 & asob_data$alive_2==1))>0){stop("asob alive_sequence has a 0, 1")}
-
 amca_data$f_1[which(!is.na(amca_data$biom_1) & is.na(amca_data$f_1))] <- 0 # replacing flower # of any plants with mreasurements but no flower number with a zero
 amca_data$f_2[which(!is.na(amca_data$biom_2) & is.na(amca_data$f_2))] <- 0 
 kueu_data$f_1[which(!is.na(kueu_data$biom_1) & is.na(kueu_data$f_1))] <- 0 
 kueu_data$f_2[which(!is.na(kueu_data$biom_2) & is.na(kueu_data$f_2))] <- 0 
 ecan_data$f_1[which(!is.na(ecan_data$biom_1) & is.na(ecan_data$f_1))] <- 0 
 ecan_data$f_2[which(!is.na(ecan_data$biom_2) & is.na(ecan_data$f_2))] <- 0 
-asob_data$f_1[which(!is.na(asob_data$biom_1) & is.na(asob_data$f_1))] <- 0 
-asob_data$f_2[which(!is.na(asob_data$biom_2) & is.na(asob_data$f_2))] <- 0 
 
 ecan_data$cov_1 <- as.numeric(ecan_data$ cov_1)
 ecan_data$cov_2 <- as.numeric(ecan_data$ cov_2)
@@ -407,13 +313,8 @@ amca_data$cov_2 <- as.numeric(amca_data$ cov_2)
 amca_data$fri <- factor(amca_data$fri)
 amca_data$bison <- factor(amca_data$bison)
 
-asob_data$cov_1 <- as.numeric(asob_data$ cov_1)
-asob_data$cov_2 <- as.numeric(asob_data$ cov_2)
-asob_data$fri <- factor(asob_data$fri)
-asob_data$bison <- factor(asob_data$bison)
-
-save(amca_data, asob_data, ecan_data, kueu_data, file="/Users/allisonlouthan/Dropbox/konza/watershed demography/paper 1/code outputs/01_clean_demo_data.RData")
-
-
+write.csv(amca_data,file= "derived_data/05_amca_clean_demo_data.RData")
+write.csv(ecan_data,file= "derived_data/05_ecan_clean_demo_data.RData")
+write.csv(kueu_data,file= "derived_data/05_kueu_clean_demo_data.RData")
 
 
