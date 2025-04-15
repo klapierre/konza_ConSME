@@ -108,9 +108,9 @@ my_mod <- try(lme4::glmer.nb(max_cover~watershed*trt + (1|block) + (1|year),
                       #  (1|block/trt), # ideally, you would have this RE structure, plus year nested in there somehow, but the model does not converge even for Andropogon ger
                                 data=data_i ), silent=TRUE)
 options (warn=2)
-if (class(my_mod)[1]== "try-error" || isSingular(my_mod)) { # if the most-complex model is a try-error, is singular or DN converge
+if (class(my_mod)[1]== "try-error" || lme4::isSingular(my_mod)) { # if the most-complex model is a try-error, is singular or DN converge
    my_mod <- try(lme4::glmer.nb(max_cover~watershed*trt + year + (1|block) , data=data_i ), silent= TRUE) # then fit a simpler model
-if (class(my_mod)[1]== "try-error" || isSingular(my_mod)) {  # if that model is singular or DN converge
+if (class(my_mod)[1]== "try-error" || lme4::isSingular(my_mod)) {  # if that model is singular or DN converge
   my_mod <- try(MASS::glm.nb(max_cover~watershed*trt + year + block , data=data_i ), silent= TRUE) # use an even-simpler model-- take out RE
   if (class(my_mod)[1] == "try-error"){# if that model DN fit 
     my_mod <- try(MASS::glm.nb(max_cover~watershed*trt + block , data=data_i) , silent= TRUE)# use an even-simpler model that removes year effect
@@ -121,8 +121,9 @@ if (class(my_mod)[1]== "try-error" || isSingular(my_mod)) {  # if that model is 
 options (warn=0) # make sure warnings stay as warnings 
 
 if (class(my_mod)[1] == "try-error") {glm.nb_problems <- c(glm.nb_problems, i)} else {
-if(class(my_mod)[1] == "negbin") {my_coefs <- coef(my_mod)} else  {my_coefs <-  lme4::fixef(my_mod)} 
-  
+ 
+my_coefs <- summary(my_mod)$coefficient[, "Estimate"]
+names(my_coefs)[which(names(my_coefs) %in% c("trtBSI:watershedN4B", "trtBSX:watershedN4B", "trtXSI:watershedN4B", "trtXSX:watershedN4B", "trtXXI:watershedN4B"  ))] <- c("watershedN4B:trtBSI","watershedN4B:trtBSX", "watershedN4B:trtXSI", "watershedN4B:trtXSX", "watershedN4B:trtXXI"  ) # if the interaction term was written in the opposite order in the coefficient list, replace with standardized order
   coef_present_wNA <- match(names(my_coefs), dimnames(coefficients_allsp)[[3]] )# which coefficients are actually present, put them in the correct order-- some might be missing
   coef_present <- na.omit(match(names(my_coefs), dimnames(coefficients_allsp)[[3]] ))# which coefficients are actually present, put them in the correct order-- some might be missing
   
@@ -136,3 +137,7 @@ print(i)
 # do the glm.nb problems individuallY: https://stackoverflow.com/questions/67360883/how-to-fix-fitted-probabilities-numerically-0-or-1-occurred-warning-in-r
 
 glm.nb_problems
+# as of April 15, 2025: [1]  10  19  33  39  48  49  52  59  70  73  75  76  87  88  89  90  95  98 100 106 110 112 113 115 118
+# [26] 120 121 122 123 124 125 126 128 129 130 131 132 134 135 136 137 142 143 144 145 146 148 149 151 152
+# [51] 153 154 156 159 160 161 162 163 164 165 166 167 168 171 172 173 175 176 177 178 179 180 181 182 183
+# [76] 184 185 186 187 188 189 190 191 192 193 194 195
