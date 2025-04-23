@@ -1,0 +1,101 @@
+"","watershedN4B","trtBSI","trtBSX","trtXSI","trtXSX","trtXXI","watershedN4B:trtBSI","watershedN4B:trtBSX","watershedN4B:trtXSI","watershedN4B:trtXSX","watershedN4B:trtXXI"
+"1","Apocynum cannabinum","Ambrosia artemisiifolia","Acalypha virginica","Amorpha canescens","Artemisia ludoviciana","Amorpha canescens","Bouteloua curtipendula","Bouteloua hirsuta","Artemisia ludoviciana","Bouteloua hirsuta","Ambrosia psilostachya"
+"2","Asclepias verticillata","Ambrosia psilostachya","Ambrosia artemisiifolia","Callirhoe involucrata","Brickellia eupatorioides","Apocynum cannabinum","Bouteloua hirsuta","Carex meadii","Bouteloua hirsuta","Brickellia eupatorioides","Apocynum cannabinum"
+"3","Brickellia eupatorioides","Andropogon gerardii","Ambrosia psilostachya","Carex inops","Callirhoe involucrata","Asclepias verticillata","Carex austrina","Conyza canadensis","Carex brevior","Carex brevior","Asclepias verticillata"
+"4","Carex austrina","Artemisia ludoviciana","Amorpha canescens","Dichanthelium oligosanthes","Desmodium perplexum","Brickellia eupatorioides","Carex inops","Dalea purpurea","Lespedeza violacea","Carex inops","Bouteloua hirsuta"
+"5","Carex inops","Bouteloua curtipendula","Andropogon gerardii","Lespedeza capitata","Oenothera speciosa","Callirhoe involucrata","Carex meadii","Eragrostis spectabilis","Panicum virgatum","Carex meadii","Brickellia eupatorioides"
+"6","Cirsium altissimum","Brickellia eupatorioides","Artemisia ludoviciana","Oxalis stricta","Oxalis violacea","Carex austrina","Croton monanthogynus","Lespedeza capitata","Penstemon cobaea","Lespedeza violacea","Carex brevior"
+"7","Desmodium perplexum","Carex austrina","Bouteloua curtipendula","Oxalis violacea","Physalis pumila","Carex inops","Dalea purpurea","Physalis pumila","Physalis pumila","Physalis pumila","Croton monanthogynus"
+"8","Euphorbia nutans","Carex inops","Brickellia eupatorioides","Penstemon cobaea","Ruellia humilis","Carex meadii","Lespedeza capitata","Ruellia humilis","Ruellia humilis","Schizachyrium scoparium","Lespedeza violacea"
+"9","Lepidium densiflorum","Carex meadii","Calystegia macounii","Physalis pumila","Schizachyrium scoparium","Croton monanthogynus","Mimosa quadrivalvis","Schizachyrium scoparium","Schizachyrium scoparium","Solidago altissima","Physalis pumila"
+"10","Lespedeza capitata","Croton monanthogynus","Carex inops","Ratibida columnifera","Scutellaria parvula","Dalea candida","Panicum virgatum","Solidago altissima","Solidago altissima","Solidago rigida","Ruellia humilis"
+"11","Lespedeza violacea","Dalea purpurea","Carex meadii","Rhus glabra","Solidago altissima","Oxalis stricta","Physalis pumila","Sorghastrum nutans","Solidago missouriensis","Symphoricarpos orbiculatus","Schizachyrium scoparium"
+"12","Panicum virgatum","Lespedeza capitata","Dalea candida","Schizachyrium scoparium","Solidago rigida","Oxalis violacea","Solidago altissima","Tragia betonicifolia","Sporobolus compositus","Symphyotrichum oblongifolium","Solidago altissima"
+"13","Penstemon cobaea","Oxalis violacea","Dalea purpurea","Spermolepis inermis","Symphoricarpos orbiculatus","Panicum virgatum","Solidago missouriensis","Verbena stricta","Symphyotrichum oblongifolium","Vernonia baldwinii","Solidago rigida"
+"14","Physalis pumila","Panicum virgatum","Desmodium perplexum","Symphyotrichum ericoides","Symphyotrichum ericoides","Physalis pumila","Symphoricarpos orbiculatus","Vernonia baldwinii",NA,NA,"Sporobolus compositus"
+"15","Physalis virginiana","Physalis pumila","Euphorbia glyptosperma","Vernonia baldwinii","Tridens flavus","Physalis virginiana","Symphyotrichum ericoides",NA,NA,NA,"Symphoricarpos orbiculatus"
+"16","Rhus glabra","Rhus glabra","Euphorbia nutans",NA,"Verbena stricta","Schizachyrium scoparium","Verbena stricta",NA,NA,NA,"Symphyotrichum oblongifolium"
+"17","Schedonnardus paniculatus","Schizachyrium scoparium","Hedeoma hispida",NA,"Vernonia baldwinii","Scutellaria parvula","Vernonia baldwinii",NA,NA,NA,"Verbena stricta"
+"18","Sporobolus compositus","Scutellaria parvula","Hordeum pusillum",NA,"Viola nephrophylla","Solidago missouriensis",NA,NA,NA,NA,NA
+"19","Tragia betonicifolia","Solidago altissima","Hymenopappus scabiosaeus",NA,NA,"Spermolepis inermis",NA,NA,NA,NA,NA
+"20","Verbena stricta","Solidago rigida","Kummerowia stipulacea",NA,NA,"Symphyotrichum ericoides",NA,NA,NA,NA,NA
+"21","Vernonia baldwinii","Sporobolus compositus","Oxalis violacea",NA,NA,"Tridens flavus",NA,NA,NA,NA,NA
+"22",NA,"Symphyotrichum ericoides","Panicum virgatum",NA,NA,"Verbena stricta",NA,NA,NA,NA,NA
+"23",NA,"Verbena stricta","Physalis pumila",NA,NA,"Viola nephrophylla",NA,NA,NA,NA,NA
+"24",NA,"Vernonia baldwinii","Ratibida columnifera",NA,NA,NA,NA,NA,NA,NA,NA
+"25",NA,"Viola nephrophylla","Rhus glabra",NA,NA,NA,NA,NA,NA,NA,NA
+"26",NA,NA,"Schizachyrium scoparium",NA,NA,NA,NA,NA,NA,NA,NA
+"27",NA,NA,"Scutellaria parvula",NA,NA,NA,NA,NA,NA,NA,NA
+"28",NA,NA,"Solidago rigida",NA,NA,NA,NA,NA,NA,NA,NA
+"29",NA,NA,"Sorghastrum nutans",NA,NA,NA,NA,NA,NA,NA,NA
+"30",NA,NA,"Symphyotrichum ericoides",NA,NA,NA,NA,NA,NA,NA,NA
+"31",NA,NA,"Tragia betonicifolia",NA,NA,NA,NA,NA,NA,NA,NA
+"32",NA,NA,"Tridens flavus",NA,NA,NA,NA,NA,NA,NA,NA
+"33",NA,NA,"Viola nephrophylla",NA,NA,NA,NA,NA,NA,NA,NA
+"34",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"35",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"36",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"37",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"38",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"39",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"40",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"41",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"42",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"43",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"44",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"45",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"46",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"47",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"48",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"49",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"50",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"51",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"52",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"53",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"54",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"55",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"56",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"57",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"58",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"59",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"60",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"61",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"62",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"63",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"64",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"65",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"66",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"67",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"68",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"69",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"70",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"71",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"72",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"73",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"74",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"75",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"76",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"77",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"78",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"79",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"80",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"81",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"82",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"83",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"84",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"85",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"86",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"87",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"88",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"89",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"90",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"91",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"92",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"93",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"94",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"95",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"96",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"97",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"98",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"99",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"100",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA

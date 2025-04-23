@@ -31,23 +31,25 @@ rm(list = ls())
 
 # load in data----
 
-amca_data_20 <- readxl::read_xlsx('/Users/allisonlouthan/Dropbox/konza/watershed demography/annual data/2020/consolidated all field data files/ConSME-amca-2020-all.xlsx')
-ecan_data_20 <- readxl::read_xlsx('/Users/allisonlouthan/Dropbox/konza/watershed demography/annual data/2020/consolidated all field data files/ConSME-ecan-2020-all.xlsx')
+amca_data_20 <- readxl::read_xlsx('data/demo data/ConSME-amca-2020-all.xlsx')
+amca_data_20 <- amca_data_20[,which(names(amca_data_20) != "meas")]
+amca_data_20$H <- NA # incorrect size measurement in 2020
+ecan_data_20 <- readxl::read_xlsx('data/demo data/ConSME-ecan-2020-all.xlsx')
 ecan_data_20 <- ecan_data_20[,which(names(ecan_data_20) != "meas")]
-kueu_data_20 <- readxl::read_xlsx('/Users/allisonlouthan/Dropbox/konza/watershed demography/annual data/2020/consolidated all field data files/ConSME-kueu-2020-all.xlsx')
+kueu_data_20 <- readxl::read_xlsx('data/demo data/ConSME-kueu-2020-all.xlsx')
 kueu_data_20 <- kueu_data_20[,which(names(kueu_data_20) != "meas")]
 
-amca_data_21 <- readxl::read_xlsx('/Users/allisonlouthan/Dropbox/konza/watershed demography/annual data/2021/consolidated all field data files/ConSME-amca-21-all.xlsx')
-ecan_data_21 <- readxl::read_xlsx('/Users/allisonlouthan/Dropbox/konza/watershed demography/annual data/2021/consolidated all field data files/ConSME-ecan-21-all.xlsx')
-kueu_data_21 <- readxl::read_xlsx('/Users/allisonlouthan/Dropbox/konza/watershed demography/annual data/2021/consolidated all field data files/ConSME-kueu-21-all.xlsx')
+amca_data_21 <- readxl::read_xlsx('data/demo data/ConSME-amca-21-all.xlsx')
+ecan_data_21 <- readxl::read_xlsx('data/demo data/ConSME-ecan-21-all.xlsx')
+kueu_data_21 <- readxl::read_xlsx('data/demo data/ConSME-kueu-21-all.xlsx')
 
-amca_data_22 <- readxl::read_xlsx('/Users/allisonlouthan/Dropbox/konza/watershed demography/annual data/2022/consolidated all field data files/ConSME-amca-22-all.xlsx')
-ecan_data_22 <- readxl::read_xlsx('/Users/allisonlouthan/Dropbox/konza/watershed demography/annual data/2022/consolidated all field data files/ConSME-ecan-22-all.xlsx')
-kueu_data_22 <- readxl::read_xlsx('/Users/allisonlouthan/Dropbox/konza/watershed demography/annual data/2022/consolidated all field data files/ConSME-kueu-22-all.xlsx')
+amca_data_22 <- readxl::read_xlsx('data/demo data/ConSME-amca-22-all.xlsx')
+ecan_data_22 <- readxl::read_xlsx('data/demo data/ConSME-ecan-22-all.xlsx')
+kueu_data_22 <- readxl::read_xlsx('data/demo data/ConSME-kueu-22-all.xlsx')
 
-amca_data_23 <- readxl::read_xlsx('/Users/allisonlouthan/Dropbox/konza/watershed demography/annual data/2023/consolidated all field data files/ConSME-amca-23-ds.xlsx')
-ecan_data_23 <- readxl::read_xlsx('/Users/allisonlouthan/Dropbox/konza/watershed demography/annual data/2023/consolidated all field data files/ConSME-ecan-23-ds.xlsx')
-kueu_data_23 <- readxl::read_xlsx('/Users/allisonlouthan/Dropbox/konza/watershed demography/annual data/2023/consolidated all field data files/ConSME-kueu-23-ds.xlsx')
+amca_data_23 <- readxl::read_xlsx('data/demo data/ConSME-amca-23-ds.xlsx')
+ecan_data_23 <- readxl::read_xlsx('data/demo data/ConSME-ecan-23-ds.xlsx')
+kueu_data_23 <- readxl::read_xlsx('data/demo data/ConSME-kueu-23-ds.xlsx')
 
 # remove plants that notes specify should be removed----
 
@@ -77,29 +79,45 @@ ecan_data_20$comm[grepl("disc", ecan_data_20$comm)]
 ecan_data_21$comm[grepl("disc", ecan_data_21$comm)]
 ecan_data_22$comm[grepl("disc", ecan_data_22$comm)]
 ecan_data_23$comm[grepl("disc", ecan_data_23$comm)]
-
+kueu_data_21 <- dplyr::rename(kueu_data_21, alive21= alive20)
 
 
 # combining the three years' data into one file ----
-amca_data_20 <- amca_data_20[,which(names(amca_data_20) != "meas")]
 
 sp_name <- c("amca", "kueu", "ecan")
-sp_measurements <- list (c(), 
+sp_measurements <- list (c("h", "n", "d", "l_f"), 
                          c("n", "h", "f"), 
                          c("n_ros","l_ros", "f", "n_f","l_f" ))
 for (i in 1:3){
-  i_data_20 <- get(paste(sp_name[i]), "_data_20", sep= "")
-  i_data_21 <- get(paste(sp_name[i]), "_data_21", sep= "")
-  i_data_22 <- get(paste(sp_name[i]), "_data_22", sep= "")
-  i_data_23 <- get(paste(sp_name[i]), "_data_23", sep= "")
+  i_data_20 <- get(paste(sp_name[i], "_data_20", sep= ""))
+  i_data_21 <- get(paste(sp_name[i], "_data_21", sep= ""))
+  i_data_22 <- get(paste(sp_name[i], "_data_22", sep= ""))
+  i_data_23 <- get(paste(sp_name[i], "_data_23", sep= ""))
+  names(i_data_20) <- tolower(names(i_data_20))
+  names(i_data_21) <- tolower(names(i_data_21))
+  names(i_data_22) <- tolower(names(i_data_22))
+  names(i_data_23) <- tolower(names(i_data_23))
+  i_data_20$block  <- toupper(i_data_20$block)
+  i_data_21$block  <- toupper(i_data_21$block)
+  i_data_22$block  <- toupper(i_data_22$block)
+  i_data_23$block  <- toupper(i_data_23$block)
+  i_data_20 <- dplyr::rename(i_data_20, alive_startyear= alive20)
+  i_data_21 <- dplyr::rename(i_data_21, alive_startyear= alive21)
+  i_data_22 <- dplyr::rename(i_data_22, alive_startyear= alive22)
+  i_data_23 <- dplyr::rename(i_data_23, alive_startyear= alive23)
+  
+  
+  i_data_20$startyear  <- 2020
+  i_data_21$startyear  <- 2021
+  i_data_22$startyear  <- 2022
+  i_data_23$startyear  <- 2023
   
   # make a fully unique plant id
-  i_data_20$plant_id <- paste(i_data_20$watershed, i_data_20$plant_id)
-  i_data_21$plant_id <- paste(i_data_21$watershed, i_data_21$plant_id)
-  i_data_22$plant_id <- paste(i_data_22$watershed, i_data_22$plant_id)
-  i_data_23$plant_id <- paste(i_data_23$watershed, i_data_23$plant_id)
+  i_data_20$plant_id <- paste(i_data_20$block, i_data_20$plot, i_data_20$x, i_data_20$y, i_data_20$mrk)
+  i_data_21$plant_id <- paste(i_data_21$block, i_data_21$plot, i_data_21$x, i_data_21$y, i_data_21$mrk)
+  i_data_22$plant_id <- paste(i_data_22$block, i_data_22$plot, i_data_22$x, i_data_22$y, i_data_22$mrk)
+  i_data_23$plant_id <- paste(i_data_23$block, i_data_23$plot, i_data_23$x, i_data_23$y, i_data_23$mrk)  
   
-
 # testing to see if there are plants that came back to life & assign survival
 
 unique_plant_ids <- unique(c(i_data_20$plant_id, i_data_21$plant_id, i_data_22$plant_id,i_data_23$plant_id ))
@@ -127,69 +145,67 @@ for ( ii in 1: length(unique_plant_ids)){ # cycles through all the individual pl
     # then, replace the survival values in the dataset, adding rows if necessary...
     if (length(replace_with_ones)>0){
       if((1 %in% replace_with_ones) & # if you are supposed to replace the first entry (i.e. year 2020)
-         (length(i_data_20$alive_startyear[which(i_data_20$plant_id== unique_plant_ids[i] )]) >0) # and the plantID was present in that year
-      ){i_data_20$alive_startyear[which(i_data_20$plant_id== unique_plant_ids[i] )] <- 1} # then replace it
+         (length(i_data_20$alive_startyear[which(i_data_20$plant_id== unique_plant_ids[ii] )]) >0) # and the plantID was present in that year
+      ){i_data_20$alive_startyear[which(i_data_20$plant_id== unique_plant_ids[ii] )] <- 1} # then replace it
       if((1 %in% replace_with_ones) & # if you are supposed to replace the first entry (i.e. year 2020)
-         (length(i_data_20$alive_startyear[which(i_data_20$plant_id== unique_plant_ids[i] )]) ==0)){# but the plantID was not present in that year
+         (length(i_data_20$alive_startyear[which(i_data_20$plant_id== unique_plant_ids[ii] )]) ==0)){# but the plantID was not present in that year
         i_data_20[nrow(i_data_20) +1,] <- NA # then add a row that contains an "alive" = 1 entry for that plantID x year
-        i_data_20[nrow(i_data_20) +1,"plant_id"] <- unique_plant_ids[i]
+        i_data_20[nrow(i_data_20) +1,"plant_id"] <- unique_plant_ids[ii]
         i_data_20[nrow(i_data_20) +1,"alive_startyear"] <- 1 
         i_data_20[nrow(i_data_20) +1,"startyear"] <- 2020
       }
-      if((2 %in% replace_with_ones) & (length(i_data_21$alive_startyear[which(i_data_21$plant_id== unique_plant_ids[i] )]) >0)){i_data_21$alive_startyear[which(i_data_21$plant_id== unique_plant_ids[i] )] <- 1}
-      if((2 %in% replace_with_ones) & (length(i_data_21$alive_startyear[which(i_data_21$plant_id== unique_plant_ids[i] )]) ==0)){
+      if((2 %in% replace_with_ones) & (length(i_data_21$alive_startyear[which(i_data_21$plant_id== unique_plant_ids[ii] )]) >0)){i_data_21$alive_startyear[which(i_data_21$plant_id== unique_plant_ids[ii] )] <- 1}
+      if((2 %in% replace_with_ones) & (length(i_data_21$alive_startyear[which(i_data_21$plant_id== unique_plant_ids[ii] )]) ==0)){
         i_data_21[nrow(i_data_21) +1,] <- NA
-        i_data_21[nrow(i_data_21) +1,"plant_id"] <- unique_plant_ids[i]
+        i_data_21[nrow(i_data_21) +1,"plant_id"] <- unique_plant_ids[ii]
         i_data_21[nrow(i_data_21) +1,"alive_startyear"] <- 1 
         i_data_21[nrow(i_data_21) +1,"startyear"] <- 2021
       }
-      if((3 %in% replace_with_ones) & (length(i_data_22$alive_startyear[which(i_data_22$plant_id== unique_plant_ids[i] )]) >0)){i_data_22$alive_startyear[which(i_data_22$plant_id== unique_plant_ids[i] )] <- 1}
-      if((3 %in% replace_with_ones) & (length(i_data_22$alive_startyear[which(i_data_22$plant_id== unique_plant_ids[i] )]) ==0)){
+      if((3 %in% replace_with_ones) & (length(i_data_22$alive_startyear[which(i_data_22$plant_id== unique_plant_ids[ii] )]) >0)){i_data_22$alive_startyear[which(i_data_22$plant_id== unique_plant_ids[ii] )] <- 1}
+      if((3 %in% replace_with_ones) & (length(i_data_22$alive_startyear[which(i_data_22$plant_id== unique_plant_ids[ii] )]) ==0)){
         i_data_22[nrow(i_data_22) +1,] <- NA
-        i_data_22[nrow(i_data_22) +1,"plant_id"] <- unique_plant_ids[i]
+        i_data_22[nrow(i_data_22) +1,"plant_id"] <- unique_plant_ids[ii]
         i_data_22[nrow(i_data_22) +1,"alive_startyear"] <- 1 
         i_data_22[nrow(i_data_22) +1,"startyear"] <- 2022
       }
-      if((4 %in% replace_with_ones) & (length(i_data_23$alive_startyear[which(i_data_23$plant_id== unique_plant_ids[i] )]) >0)){i_data_23$alive_startyear[which(i_data_23$plant_id== unique_plant_ids[i] )] <- 1}
-      if((4 %in% replace_with_ones) & (length(i_data_23$alive_startyear[which(i_data_23$plant_id== unique_plant_ids[i] )]) ==0)){
+      if((4 %in% replace_with_ones) & (length(i_data_23$alive_startyear[which(i_data_23$plant_id== unique_plant_ids[ii] )]) >0)){i_data_23$alive_startyear[which(i_data_23$plant_id== unique_plant_ids[ii] )] <- 1}
+      if((4 %in% replace_with_ones) & (length(i_data_23$alive_startyear[which(i_data_23$plant_id== unique_plant_ids[ii] )]) ==0)){
         i_data_23[nrow(i_data_23) +1,] <- NA
-        i_data_23[nrow(i_data_23) +1,"plant_id"] <- unique_plant_ids[i]
+        i_data_23[nrow(i_data_23) +1,"plant_id"] <- unique_plant_ids[ii]
         i_data_23[nrow(i_data_23) +1,"alive_startyear"] <- 1 
         i_data_23[nrow(i_data_23) +1,"startyear"] <- 2023
       }
     }}
 }
 # need to make the final year of data, which is currently unfinished. including this last year becomes important when calculating recruitment later
-my_colnames <- c("plant_id", "watershed",sp_measurements[[i]], "note", "cov", "alive_startyear")
+my_colnames <- c("plant_id",sp_measurements[[i]], "note", "cov", "alive_startyear")
 endingyear <- data.frame(matrix(nrow=0, ncol=length(my_colnames)))
 colnames(endingyear) <- my_colnames
 endingyear$plant_id <- as.character(endingyear$plant_id)
-endingyear$watershed <- as.character(endingyear$watershed)
-
+if (i == 1) {i_data_20$cov <- NA}
 i_data_transition1 <- dplyr::full_join(i_data_20,
-                                          i_data_21[,c("plant_id", "watershed",sp_measurements[[i]], "note", "cov", "alive_startyear")], by= c("plant_id", "watershed")) 
+                                          i_data_21[,c("plant_id", sp_measurements[[i]], "note", "cov", "alive_startyear")], by= c("plant_id")) 
 i_data_transition2 <- dplyr::full_join(i_data_21, 
-                                          i_data_22[,c("plant_id", "watershed" ,sp_measurements[[i]], "note", "cov", "alive_startyear")], by= c("plant_id", "watershed")) 
+                                          i_data_22[,c("plant_id", sp_measurements[[i]], "note", "cov", "alive_startyear")], by= c("plant_id")) 
 i_data_transition3 <- dplyr::full_join(i_data_22,
-                                          i_data_23[,c("plant_id", "watershed" ,sp_measurements[[i]], "note", "cov", "alive_startyear")], by= c("plant_id", "watershed")) 
+                                          i_data_23[,c("plant_id", sp_measurements[[i]], "note", "cov", "alive_startyear")], by= c("plant_id")) 
 i_data_transition4 <- dplyr::full_join(i_data_23,
-                                          endingyear, by= c("plant_id", "watershed")) 
+                                          endingyear, by= c("plant_id")) 
 
 assign(paste(sp_name[i], "_data", sep= ""), # name of dataset; in the form of kueu_data
-       rbind(i_data_transition1[which(!is.na(i_data_transition1$startyear)),order(names(i_data_transition1))], 
-                   i_data_transition2[which(!is.na(i_data_transition2$startyear)),order(names(i_data_transition2))], 
-                   i_data_transition3[which(!is.na(i_data_transition3$startyear)),order(names(i_data_transition3))],
-                   i_data_transition4[which(!is.na(i_data_transition4$startyear)),order(names(i_data_transition4))]))
+       rbind(i_data_transition1[which(!is.na(i_data_transition1$startyear)),sort(names(i_data_transition1))], 
+                   i_data_transition2[which(!is.na(i_data_transition2$startyear)),sort(names(i_data_transition2))], 
+                   i_data_transition3[which(!is.na(i_data_transition3$startyear)),sort(names(i_data_transition3))],
+                   i_data_transition4[which(!is.na(i_data_transition4$startyear)),sort(names(i_data_transition4))]))
 } # end loop that combines data acrtoss years
 
 
 # calculating biomass for each species---- 
-kueu_data$h.y[which(kueu_data$h.y == "40.8, 2.9, 0.3, 0.5, 0.4,")] <- kueu_data$h.x[which(kueu_data$h.x == "40.8, 2.9, 0.3, 0.5, 0.4,")] <-  "40.8" # fixing some typos
-kueu_data$h.y[which(kueu_data$h.y == "39.6,")] <- kueu_data$h.x[which(kueu_data$h.x == "39.6,")] <- "39.6"
-kueu_data$h.y[which(kueu_data$h.y == "48.1,")] <- kueu_data$h.x[which(kueu_data$h.x == "48.1,")] <- "48.1"
+kueu_data$h.x[which(kueu_data$h.x=="17, 5" )] <- NA
+kueu_data$h.y[which(kueu_data$h.y=="17, 5" )] <- NA
+
 kueu_data$h.x <- as.numeric(kueu_data$h.x)
 kueu_data$h.y <- as.numeric(kueu_data$h.y)
-
 kueu_data$biom_1 <- kueu_data$h.x *kueu_data$n.x
 kueu_data$biom_2 <- kueu_data$h.y *kueu_data$n.y
 kueu_data$f_1 <-  NA
@@ -198,36 +214,16 @@ for (i in 1:dim(kueu_data)[1]){
   kueu_data$f_1[i] <-  sum(Numextract(kueu_data$f.x[i]))
   kueu_data$f_2[i] <-  sum(Numextract(kueu_data$f.y[i]))
 }
-kueu_data$new_startyear <- NA
-kueu_data$new_startyear[which(grepl("new", kueu_data$comm))] <- "new" # denotes those plants that have a "new" in the comments for startyear
-kueu_data <- kueu_data[, c( "watershed",  "transect","x","y", "plant_id" , "startyear" ,  "biom_1"   ,
-                            "biom_2" ,   "f_1"   ,    "f_2"   ,"cov.x" ,    "cov.y" , "alive_startyear.x", "alive_startyear.y" , "new_startyear")]
-names(kueu_data) <- c( "watershed", "transect","x","y",  "plant_id" , "startyear" ,  "biom_1"   ,
-                       "biom_2" ,   "f_1"   ,    "f_2"   ,"cov_1" ,    "cov_2", "alive_1", "alive_2", "new_startyear" )
-kueu_data$bison <- substr(kueu_data$watershed, 1, 1)
-kueu_data$fri <- substr(kueu_data$watershed, 2, 2)
-
-
-
+kueu_data <- kueu_data[, c( "block", "plot","x","y", "plant_id" , "startyear" ,  "biom_1"   ,
+                            "biom_2" ,   "f_1"   ,    "f_2"   ,"cov.x" ,    "cov.y" , "alive_startyear.x", "alive_startyear.y" )]
+names(kueu_data) <- c( "block", "plot","x","y",  "plant_id" , "startyear" ,  "biom_1"   ,
+                       "biom_2" ,   "f_1"   ,    "f_2"   ,"cov_1" ,    "cov_2", "alive_1", "alive_2")
 
 ecan_data$biom_1 <- ecan_data$biom_2 <- ecan_data$f_1 <- ecan_data$f_2 <- NA
 
 # fixing some errors illuminated by the loop below:
-ecan_data$l_f.y[which(ecan_data$plant_id== "K1A 197"  & ecan_data$startyear== 2020)] <- "17.5, 12.6"
-ecan_data[which(ecan_data$plant_id== "K2A 118" & ecan_data$startyear== 2020), c("n_ros.x", "l_ros.x")] <- NA
-ecan_data[which(ecan_data$plant_id== "K2A 119" & ecan_data$startyear== 2020), c("n_f.x", "l_f.x")] <- NA
-ecan_data[which(ecan_data$plant_id== "K2A 134" & ecan_data$startyear== 2020), c("n_ros.y", "l_ros.y")] <- NA
-ecan_data$l_f.x[which(ecan_data$plant_id== "K1A 197" & ecan_data$startyear== 2021)] <- "17.5, 12.6"
-ecan_data[which(ecan_data$plant_id== "K2A 109" & ecan_data$startyear== 2021), c("n_ros.y", "l_ros.y")] <- NA
-ecan_data[which(ecan_data$plant_id== "K2A 109" & ecan_data$startyear== 2022), c("n_ros.x", "l_ros.x")] <- NA
-ecan_data[which(ecan_data$plant_id== "K2A 134" & ecan_data$startyear== 2021), c("l_ros.x", "n_ros.x")] <- NA
-ecan_data[which(ecan_data$plant_id== "K1A 189" & ecan_data$startyear== 2022), c("l_ros.y", "n_ros.y")] <- ecan_data[which(ecan_data$plant_id== "K1A 189" & ecan_data$startyear== 2023), c("l_ros.x", "n_ros.x")] <- NA
-ecan_data[which(ecan_data$plant_id== "K1A 189" & ecan_data$startyear== 2022), c("l_ros.y", "n_ros.y")] <- ecan_data[which(ecan_data$plant_id== "K1A 189" & ecan_data$startyear== 2023), c("l_ros.x", "n_ros.x")] <- NA
-ecan_data[which(ecan_data$plant_id == "N1A 62" & ecan_data$startyear== 2022), c("l_ros.y", "n_ros.y")] <- ecan_data[which(ecan_data$plant_id == "N1A 62" & ecan_data$startyear== 2023), c("l_ros.x", "n_ros.x")] <- NA
-ecan_data[which(ecan_data$plant_id == "K2A 109" & ecan_data$startyear== 2022), c("l_ros.y", "n_ros.y")] <- ecan_data[which(ecan_data$plant_id == "K2A 109" & ecan_data$startyear== 2023), c("l_ros.x", "n_ros.x")] <- NA
-ecan_data$l_ros.y[which(ecan_data$plant_id == "K2A 195" & ecan_data$startyear== 2022)] <- ecan_data$l_ros.x[which(ecan_data$plant_id == "K2A 195" & ecan_data$startyear== 2023)] <- "23.5, 23.3"
-ecan_data$l_ros.y[which(ecan_data$plant_id== "N1A 101" & ecan_data$startyear== 2022)] <- ecan_data$l_ros.x[which(ecan_data$plant_id== "N1A 101" & ecan_data$startyear== 2023)] <- "19.5, 20, 21"
-
+ecan_data$l_ros.y[which(ecan_data$l_ros.y== "25.2, 25.7, 22,2")] <- "25.2, 25.7, 22.2"
+ecan_data$l_ros.x[which(ecan_data$l_ros.x== "25.2, 25.7, 22,2")] <- "25.2, 25.7, 22.2"
 
 for (i in 1:dim(ecan_data)[1]){
   biom_ros1 <- sum(Numextract(ecan_data$n_ros.x[i]) *Numextract(ecan_data$l_ros.x[i]))
@@ -242,16 +238,10 @@ for (i in 1:dim(ecan_data)[1]){
   ecan_data$f_2[i] <- sum(Numextract(ecan_data$f.y[i]))
   rm(biom_ros1, biom_f1, biom_ros2, biom_f2)
 }
-ecan_data$new_startyear <- NA
-ecan_data$new_startyear[which(grepl("new", ecan_data$comm))] <- "new" # denotes those plants that have a "new" in the comments for startyear
-ecan_data <- ecan_data[, c( "watershed", "transect","x","y",   "plant_id" , "startyear" ,  "biom_1"   ,
-                            "biom_2" ,   "f_1"   ,    "f_2"   ,"cov.x" ,    "cov.y" , "alive_startyear.x" , "alive_startyear.y", "new_startyear")]
-names(ecan_data) <- c( "watershed", "transect","x","y",  "plant_id" , "startyear" ,  "biom_1"   ,
-                       "biom_2" ,   "f_1"   ,    "f_2"   ,"cov_1" ,    "cov_2", "alive_1", "alive_2","new_startyear"    )
-ecan_data$bison <- substr(ecan_data$watershed, 1, 1)
-ecan_data$fri <- substr(ecan_data$watershed, 2, 2)
-
-
+ecan_data <- ecan_data[, c( "block", "plot","x","y",   "plant_id" , "startyear" ,  "biom_1"   ,
+                            "biom_2" ,   "f_1"   ,    "f_2"   ,"cov.x" ,    "cov.y" , "alive_startyear.x" , "alive_startyear.y")]
+names(ecan_data) <- c( "block", "plot","x","y",  "plant_id" , "startyear" ,  "biom_1"   ,
+                       "biom_2" ,   "f_1"   ,    "f_2"   ,"cov_1" ,    "cov_2", "alive_1", "alive_2"  )
 
 #amca
 # best measurement of biomass is h*s (r^2= 0.65), but you didn't measure h the first year
@@ -261,19 +251,15 @@ ecan_data$fri <- substr(ecan_data$watershed, 2, 2)
 amca_data$biom_2 <- amca_data$biom_1 <- amca_data$f_1 <- amca_data$f_2 <-NA
 
 for (i in 1:dim(amca_data)[1]){
-  amca_data$biom_1[i] <- sum(Numextract(amca_data$D.x[i])*Numextract(amca_data$N.x[i]))
-  amca_data$biom_2[i] <- sum(Numextract(amca_data$D.y[i])*Numextract(amca_data$N.y[i]))
-  amca_data$f_1[i] <- sum(Numextract(amca_data$L_F.x[i]))
-  amca_data$f_2[i] <- sum(Numextract(amca_data$L_F.y[i]))
+  amca_data$biom_1[i] <- sum(Numextract(amca_data$d.x[i])*Numextract(amca_data$n.x[i]))
+  amca_data$biom_2[i] <- sum(Numextract(amca_data$d.y[i])*Numextract(amca_data$n.y[i]))
+  amca_data$f_1[i] <- sum(Numextract(amca_data$l_f.x[i]))
+  amca_data$f_2[i] <- sum(Numextract(amca_data$l_f.y[i]))
 }
-amca_data$new_startyear <- NA
-amca_data$new_startyear[which(grepl("new", amca_data$comm))] <- "new" # denotes those plants that have a "new" in the comments for startyear
-amca_data <- amca_data[, c( "watershed", "transect","x","y",   "plant_id" , "startyear" ,  "biom_1"   ,
-                            "biom_2" ,   "f_1"   ,    "f_2"  ,"cov.x" ,    "cov.y" , "alive_startyear.x" , "alive_startyear.y", "new_startyear")]
-names(amca_data) <- c( "watershed", "transect","x","y",   "plant_id" , "startyear" ,  "biom_1"   ,
-                       "biom_2" ,   "f_1"   ,    "f_2"   ,"cov_1" ,    "cov_2" ,"alive_1", "alive_2", "new_startyear" )
-amca_data$bison <- substr(amca_data$watershed, 1, 1)
-amca_data$fri <- substr(amca_data$watershed, 2, 2)
+amca_data <- amca_data[, c( "block", "plot","x","y",   "plant_id" , "startyear" ,  "biom_1"   ,
+                            "biom_2" ,   "f_1"   ,    "f_2"  ,"cov.x" ,    "cov.y" , "alive_startyear.x" , "alive_startyear.y")]
+names(amca_data) <- c( "block", "plot","x","y",   "plant_id" , "startyear" ,  "biom_1"   ,
+                       "biom_2" ,   "f_1"   ,    "f_2"   ,"cov_1" ,    "cov_2" ,"alive_1", "alive_2")
 
 # doing some final touches here
 amca_data$sur_1_2 <- NA
@@ -298,20 +284,20 @@ kueu_data$f_2[which(!is.na(kueu_data$biom_2) & is.na(kueu_data$f_2))] <- 0
 ecan_data$f_1[which(!is.na(ecan_data$biom_1) & is.na(ecan_data$f_1))] <- 0 
 ecan_data$f_2[which(!is.na(ecan_data$biom_2) & is.na(ecan_data$f_2))] <- 0 
 
-ecan_data$cov_1 <- as.numeric(ecan_data$ cov_1)
+ecan_data$cov_1 <- as.numeric(ecan_data$ cov_1) # can ignore NAs introduced by coercion
 ecan_data$cov_2 <- as.numeric(ecan_data$ cov_2)
-ecan_data$fri <- factor(ecan_data$fri)
-ecan_data$bison <- factor(ecan_data$bison)
+ecan_data$block <- factor(ecan_data$block)
+ecan_data$plot <- factor(ecan_data$plot)
 
 kueu_data$cov_1 <- as.numeric(kueu_data$ cov_1)
 kueu_data$cov_2 <- as.numeric(kueu_data$ cov_2)
-kueu_data$fri <- factor(kueu_data$fri)
-kueu_data$bison <- factor(kueu_data$bison)
+kueu_data$block <- factor(kueu_data$block)
+kueu_data$plot <- factor(kueu_data$plot)
 
 amca_data$cov_1 <- as.numeric(amca_data$ cov_1)
 amca_data$cov_2 <- as.numeric(amca_data$ cov_2)
-amca_data$fri <- factor(amca_data$fri)
-amca_data$bison <- factor(amca_data$bison)
+amca_data$block <- factor(amca_data$block)
+amca_data$plot <- factor(amca_data$plot)
 
 write.csv(amca_data,file= "derived_data/05_amca_clean_demo_data.RData")
 write.csv(ecan_data,file= "derived_data/05_ecan_clean_demo_data.RData")

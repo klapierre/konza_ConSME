@@ -3,7 +3,7 @@
 ##
 ##  Author: Allison Louthan
 ##  Date created: January 16, 2025
-##  Last modified : March 11, 2025
+##  Last modified : April 22, 2025
 ################################################################################
 
 # libraries etc--- 
@@ -13,7 +13,7 @@ library("dplyr")
 library("tidyr")
 user <- "AL"
 
-# NB that the performance::check_singularity command doesn't appear to be working. next steps: chagne the glmer_converged function to both glmer converged and singular, then replace all uses of the performance library
+
 glmer_converged <- function(model_function){
   !any(grepl("failed to converge", model_function@optinfo$conv$lme4$messages))
 }
@@ -78,21 +78,21 @@ all_transitions <-all_transitions %>%
 mutate(ws_label=ifelse(watershed=='N1A', 'Annual', '4 Year'),
        experiment_year=year-2018)
 
-
+# fitting the models for each species----
 sp_list <- unique(all_transitions$genus_species)
-glm.nb_problems <- NULL # these are the species who threw problems on the glm.nb command in the loop; you will have to run these models seperately
-sp_list_no_glm.nb_problems <- sp_list[!sp_list %in% glm.nb_problems]
+complete_sep_problems <- # these are the species who had all zeros in one or more treatments. you'll have to usepenalized regression 
+  glm_problems <- NULL # these are the species who threw problems on the glm.nb command in the loop; you will have to run these models seperately
 
 coefficients_allsp <- array(NA, dim=c(length(sp_list), 2,12 ), dimnames= list(sp_list, c("coefficient", "P-val"),
    c("(Intercept)", "watershedN4B"   ,     "trtBSI"      ,        "trtBSX"    ,          "trtXSI"   ,           "trtXSX"    ,         
  "trtXXI"        ,      "watershedN4B:trtBSI", "watershedN4B:trtBSX", "watershedN4B:trtXSI", "watershedN4B:trtXSX" ,"watershedN4B:trtXXI"
 )))
 
-# start here at i= 90, there is a weird wraning there. 
-for (i in 1:length(sp_list_no_glm.nb_problems)){
+
+for (i in 1:length(sp_list)){
   options (warn=0)
-data_i <- all_transitions[which(all_transitions$genus_species== sp_list_no_glm.nb_problems[i]), ] 
-if (dim(data_i)[1]<260){                             
+data_i <- all_transitions[which(all_transitions$genus_species== sp_list[i]), ] 
+if (dim(data_i[which(data_i$max_cover >0), ])[1]<10){                             
   coefficients_allsp[i, 1, ] <- NA
   coefficients_allsp[i, 2, ] <- NA
   } else {
@@ -102,25 +102,89 @@ if (dim(data_i)[1]<260){
   data_i$trt <- relevel(data_i$trt, ref= "XXX")
   data_i$ year <- as.factor(data_i$year)
   data_i$ block <- as.factor(data_i$block)
-  options (warn=2)
-  
-my_mod <- try(lme4::glmer.nb(max_cover~watershed*trt + (1|block) + (1|year), 
+  options (warn=2) # converts warnings to errors in code below
+
+  if (var(data_i$max_cover)/ mean(data_i$max_cover) >1){
+my_mod <- try( # try command allows us to try to fit the model, but allow for code to continue if it fails
+  lme4::glmer.nb(max_cover~watershed*trt + (1|block) + (1|year), 
                       #  (1|block/trt), # ideally, you would have this RE structure, plus year nested in there somehow, but the model does not converge even for Andropogon ger
-                                data=data_i ), silent=TRUE)
+                                data=data_i ), 
+  silent=TRUE) # suppress printing of errors (and warnings converted to errors)
 options (warn=2)
 if (class(my_mod)[1]== "try-error" || lme4::isSingular(my_mod)) { # if the most-complex model is a try-error, is singular or DN converge
    my_mod <- try(lme4::glmer.nb(max_cover~watershed*trt + year + (1|block) , data=data_i ), silent= TRUE) # then fit a simpler model
 if (class(my_mod)[1]== "try-error" || lme4::isSingular(my_mod)) {  # if that model is singular or DN converge
-  my_mod <- try(MASS::glm.nb(max_cover~watershed*trt + year + block , data=data_i ), silent= TRUE) # use an even-simpler model-- take out RE
+  my_mod <- try(
+    pkgcond::suppress_warnings( # if the model throws a warning of "step size truncated", we don't want that warning converted to an error, b/c its not fatal & the model is still valid. only applies to GLM's
+    MASS::glm.nb(max_cover~watershed*trt + year + block , data=data_i , control=glm.control(maxit=2500)),  pattern = "step size truncated due to divergence", class = "warning") ,
+    silent= TRUE) # use an even-simpler model-- take out RE. NB that for all glm models, complete separation sometimes occurs. if it does, we take out the predictor variable that's causing complete separation (one of watershed, block, or year-- never treatment-- b/c complete separation reflects that a species is not present in a block, watershed, or year, for example)
   if (class(my_mod)[1] == "try-error"){# if that model DN fit 
-    my_mod <- try(MASS::glm.nb(max_cover~watershed*trt + block , data=data_i) , silent= TRUE)# use an even-simpler model that removes year effect
+    my_mod <- try(
+      pkgcond::suppress_warnings(
+        MASS::glm.nb(max_cover~watershed*trt + block , data=data_i, control=glm.control(maxit=2500)),  pattern = "step size truncated due to divergence", class = "warning") ,
+      silent= TRUE)# use an even-simpler model that removes year effect
    if (class(my_mod)[1] == "try-error"){# if that model DN fit 
-    try(my_mod <- MASS::glm.nb(max_cover~watershed*trt  , data=data_i), silent= TRUE)
+    try(
+      pkgcond::suppress_warnings(
+        my_mod <- MASS::glm.nb(max_cover~watershed*trt  , data=data_i, control=glm.control(maxit=2500)),  pattern = "step size truncated due to divergence", class = "warning") , 
+      silent= TRUE)
     # use an even-simpler model that removes year & block effects. code will add i to glm.nb problems vector if this model failts to fit
+     if (class(my_mod)[1] == "try-error"){# if that model DN fit 
+       my_mod <- try(
+         pkgcond::suppress_warnings(
+           MASS::glm.nb(max_cover~watershed+trt  , data=data_i, control=glm.control(maxit=2500)),  
+           pattern = "step size truncated due to divergence", class = "warning")  ,
+         silent= TRUE)}# use an even-simpler model that removes interaction term
+     if (class(my_mod)[1] == "try-error"){# if that model DN fit 
+       print(i) ### take out
+       my_mod <- try(
+         pkgcond::suppress_warnings(
+           MASS::glm.nb(max_cover~trt, data=data_i, control=glm.control(maxit=2500)) , 
+           pattern = "step size truncated due to divergence", class = "warning") , 
+         silent= FALSE)}# use an even-simpler model in case the species is only present in one watershed
   }} }} # ends the outer try-error loop
 options (warn=0) # make sure warnings stay as warnings 
-
-if (class(my_mod)[1] == "try-error") {glm.nb_problems <- c(glm.nb_problems, i)} else {
+  } else { # this else is var/ mean <1
+    
+    my_mod <- try(lme4::glmer(max_cover~watershed*trt + (1|block) + (1|year), 
+                                 #  (1|block/trt), # ideally, you would have this RE structure, plus year nested in there somehow, but the model does not converge even for Andropogon ger
+                                 data=data_i, family= "poisson" ), silent=TRUE)
+    options (warn=2)
+    if (class(my_mod)[1]== "try-error" || lme4::isSingular(my_mod)) { # if the most-complex model is a try-error, is singular or DN converge
+      my_mod <- try(lme4::glmer(max_cover~watershed*trt + year + (1|block) , data=data_i, family= "poisson" ), silent= TRUE) # then fit a simpler model
+      if (class(my_mod)[1]== "try-error" || lme4::isSingular(my_mod)) {  # if that model is singular or DN converge
+        my_mod <- try(
+          pkgcond::suppress_warnings(
+            glm(max_cover~watershed*trt + year + block , data=data_i, family= "poisson" ),  pattern = "step size truncated due to divergence", class = "warning") , silent= TRUE) # use an even-simpler model-- take out RE
+        if (class(my_mod)[1] == "try-error"){# if that model DN fit 
+          my_mod <- try(
+            pkgcond::suppress_warnings(
+              glm(max_cover~watershed*trt + block , data=data_i, family= "poisson") ,  pattern = "step size truncated due to divergence", class = "warning") , silent= TRUE)# use an even-simpler model that removes year effect
+          if (class(my_mod)[1] == "try-error"){# if that model DN fit 
+            try(
+              pkgcond::suppress_warnings(
+                my_mod <- glm(max_cover~watershed*trt  , data=data_i, family= "poisson"),  pattern = "step size truncated due to divergence", class = "warning") , silent= TRUE)
+            # use an even-simpler model that removes year & block effects. code will add i to glm.nb problems vector if this model failts to fit
+            if (class(my_mod)[1] == "try-error"){# if that model DN fit 
+              my_mod <- try(
+                pkgcond::suppress_warnings(
+                  glm(max_cover~watershed+trt, data=data_i, family= "poisson"),  pattern = "step size truncated due to divergence", class = "warning")  , silent= TRUE)}# use an even-simpler model that removes interaction term
+            if (class(my_mod)[1] == "try-error"){# if that model DN fit 
+              print(i) ### take out
+              my_mod <- try(
+                pkgcond::suppress_warnings(
+                  glm(max_cover~trt, data=data_i, family= "poisson"),  pattern = "step size truncated due to divergence", class = "warning") , 
+                silent= FALSE)}# use an even-simpler model in case the species is only present in one watershed
+          }} }} # ends the outer try-error loop
+    options (warn=0) # make sure warnings stay as warnings 
+  } 
+  
+if (class(my_mod)[1] == "try-error") {
+ # if the error message contains 0/1 separation term, then what has happened is there has been complete separation along the #trt condition-- you cannot quantify trt effects using a glm approach so you'll need to use a penalized regression approach
+  if (grepl( "fitted rates numerically 0 or 1", attr(my_mod, "condition") , fixed= TRUE)) { # if the error message in the try-error object indicates complete separation
+    complete_sep_problems <- c(complete_sep_problems, i)} else {
+  glm_problems <- c(glm_problems, i)}
+  } else {
  
 my_coefs <- summary(my_mod)$coefficient[, "Estimate"]
 names(my_coefs)[which(names(my_coefs) %in% c("trtBSI:watershedN4B", "trtBSX:watershedN4B", "trtXSI:watershedN4B", "trtXSX:watershedN4B", "trtXXI:watershedN4B"  ))] <- c("watershedN4B:trtBSI","watershedN4B:trtBSX", "watershedN4B:trtXSI", "watershedN4B:trtXSX", "watershedN4B:trtXXI"  ) # if the interaction term was written in the opposite order in the coefficient list, replace with standardized order
@@ -133,11 +197,36 @@ names(my_coefs)[which(names(my_coefs) %in% c("trtBSI:watershedN4B", "trtBSX:wate
 print(i)
 } # can safely ignore non-convergence or singularity warnings; they are handled within the loop; the loop will break if any singularity or convergene issues are problematic
 
+# figure----- 
 
-# do the glm.nb problems individuallY: https://stackoverflow.com/questions/67360883/how-to-fix-fitted-probabilities-numerically-0-or-1-occurred-warning-in-r
+#75/195 species did not have enough data to fit the model. 
 
-glm.nb_problems
-# as of April 15, 2025: [1]  10  19  33  39  48  49  52  59  70  73  75  76  87  88  89  90  95  98 100 106 110 112 113 115 118
-# [26] 120 121 122 123 124 125 126 128 129 130 131 132 134 135 136 137 142 143 144 145 146 148 149 151 152
-# [51] 153 154 156 159 160 161 162 163 164 165 166 167 168 171 172 173 175 176 177 178 179 180 181 182 183
-# [76] 184 185 186 187 188 189 190 191 192 193 194 195
+# for the remaining 120 species, which cofficients are significant and what is their sign?
+
+coef_names <- dimnames(coefficients_allsp)[[3]][-1]
+coef_summary <- as.data.frame(coef_names)
+coef_summary$no.sig <- NA
+coef_summary$no.sig.pos <- NA
+which_sig <- as.data.frame(matrix(NA, nrow= 100, ncol= length(coef_names)))
+names(which_sig) <- coef_names
+which_sig_pos <- as.data.frame(matrix(NA, nrow= 100, ncol= length(coef_names)))
+names(which_sig_pos) <- coef_names
+  
+for (i in 1:length(coef_names)){
+  
+  coef_summary$no.sig[i] <- length(which(coefficients_allsp[,"P-val", coef_names[i]] <= 0.05)) 
+  names_sig_i <- names(which(coefficients_allsp[,"P-val", coef_names[i]] <= 0.05))
+  names_sig_i <- sub("_", " ",names_sig_i )
+  which_sig[1:length(names_sig_i),i] <- sort(stringr::str_to_sentence(names_sig_i))
+  coef_summary$no.sig.pos[i] <- length(which(coefficients_allsp[,"P-val", coef_names[i]] <= 0.05 & coefficients_allsp[,"coefficient", coef_names[i]]>0))
+  names_sig_pos_i <- names(which(coefficients_allsp[,"P-val", coef_names[i]] <= 0.05 & coefficients_allsp[,"coefficient", coef_names[i]]>0))
+  names_sig_pos_i <- sub("_", " ",names_sig_pos_i )
+  which_sig_pos[1:length(names_sig_pos_i),i] <- sort(stringr::str_to_sentence(names_sig_pos_i))
+  
+  }
+
+write.csv(coef_names, file= "04_coef_sig_sign_summary.csv")
+write.csv(which_sig, file= "04_coef_sig_species_names.csv")
+write.csv(which_sig_pos, file= "04_coef_sig_pos_species_names.csv")
+
+# I think here, you want to say,look here is a table of how mamy species' densities were signficantly & positively affected by the coefficient. species'names are in the supp info
