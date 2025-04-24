@@ -5,15 +5,16 @@
 ##  Modified : 
 ################################################################################
 
-start here, with this list of problems:
-    1. even though I wrote the catch, some of the models are still try-error; WTF
-    2. once you figure that out, fix this code, the 04 code, and email Johannes
-    3. combine pf and cf into a neg bin response to help with convergence
+#start here, with this list of problems:
+#   1. make  glmer/ lmer and glm/ lm both use the same reference condition when XXX is missing/ has no data & rerun results
+#    2. add "reference condition" and 'not estimatable" to table 
+# 3. figure out how to display results-- trmt effect won't work. maybe-- if species always present in +++ treatment you could use that as the reference? (but see if this jives with Kim's work)
     
 rm(list = ls())
 
 # functions and libraries----
 library("lme4") #NB this is DIFFERENT than what Kim used 
+library("dplyr")
 
 # load in data----
 
@@ -31,13 +32,14 @@ for (i in 1:3){
   if (i == 1) data_i <- amca_data
   if (i == 2) data_i <- ecan_data
   if (i == 3) data_i <- kueu_data
-  
+
   data_i <- left_join(data_i, trt)
   data_i$watershed <- factor(data_i$watershed) %>% droplevels()
   data_i$bison <- factor(data_i$bison) %>% droplevels()
   data_i$small_mammal <- factor(data_i$small_mammal) %>% droplevels()
   data_i$invertebrates <- factor( data_i$invertebrates) %>% droplevels()
-  data_i$trt<- factor(data_i$trt) %>% droplevels()
+  data_i$trt<- factor(data_i$trt, levels= c("XXX", "XXI", "XSX", "BSX", "XSI", "BSI")) %>% droplevels()
+  if (i == 2){data_i$trt<- factor(data_i$trt, levels= c("BSI", "XXX", "XXI", "XSX", "BSX", "XSI")) %>% droplevels()}
   data_i$block <- factor(data_i$block) %>% droplevels()
   
   data_i$log_biom_1 <- log(data_i$biom_1)
@@ -70,12 +72,12 @@ for (i in 1:3){
     
 # growth (mean only, no variatnce)
     gr[[i]] <-try(
-      glmer(log_biom_2 ~ log_biom_1  + watershed*trt + (1|block)+ (1|startyear), data= data_i), 
+      lmer(log_biom_2 ~ log_biom_1  + watershed*trt + (1|block)+ (1|startyear), data= data_i), 
       silent=TRUE)
     if (class(gr[[i]])[1]== "try-error" || lme4::isSingular(gr[[i]])) { # if the most-complex model is a try-error, is singular or DN converge
-      gr[[i]] <- try(lme4::glmer(log_biom_2 ~ log_biom_1 + watershed*trt  + block + (1|startyear), data= data_i), silent= TRUE) # then fit a simpler model
+      gr[[i]] <- try(lme4::lmer(log_biom_2 ~ log_biom_1 + watershed*trt  + block + (1|startyear), data= data_i), silent= TRUE) # then fit a simpler model
       if (class(gr[[i]])[1] == "try-error" || lme4::isSingular(gr[[i]])) {  # if that model is singular or DN converge
-        gr[[i]] <- try(glm(log_biom_1 ~ log_biom_2 + watershed*trt  + block + startyear, data= data_i), silent=TRUE)
+        gr[[i]] <- try(glm(log_biom_2 ~ log_biom_1 + watershed*trt  + block + startyear, data= data_i), silent=TRUE)
         if (class(gr[[i]])[1] == "try-error") {print(paste("species", i, "gr DN converge"))}}}
 
   # prob of fruiting    
@@ -88,11 +90,11 @@ for (i in 1:3){
         if (class(pf[[i]])[1] == "try-error") {print(paste("species", i, "pf DN converge"))}}}
     
 # number of fruits
-    cf[[i]]<-try(glmer(log_cf_2 ~ log_biom_1 + watershed*trt + (1|block)+ (1|startyear), data= data_i)  , silent=TRUE) 
+    cf[[i]]<-try(lmer(log_cf_2 ~ log_biom_1 + watershed*trt + (1|block)+ (1|startyear), data= data_i)  , silent=TRUE) 
     if (class(cf[[i]])[1]== "try-error" || lme4::isSingular(cf[[i]])) { # if the most-complex model is a try-error, is singular or DN converge
-      cf[[i]] <- try(lme4::glmer(log_cf_2 ~ log_biom_1 + watershed*trt  + block + (1|startyear), data= data_i), silent= TRUE) # then fit a simpler model
+      cf[[i]] <- try(lme4::lmer(log_cf_2 ~ log_biom_1 + watershed*trt  + block + (1|startyear), data= data_i), silent= TRUE) # then fit a simpler model
       if (class(cf[[i]])[1] == "try-error" || lme4::isSingular(cf[[i]])) {  # if that model is singular or DN converge
-        cf[[i]] <- try(glm(log_cf_2 ~ log_biom_1 + watershed*trt  + block + startyear, data= data_i), silent=TRUE)
+        cf[[i]] <- try(lm(log_cf_2 ~ log_biom_1 + watershed*trt  + block + startyear, data= data_i), silent=TRUE)
         if (class(cf[[i]])[1] == "try-error") {print(paste("species", i, "cf DN converge"))}}}
     
     
@@ -108,12 +110,12 @@ for (i in 1:3){
       
       # growth (mean only, no variatnce)
       gr[[i]] <-try(
-        glmer(log_biom_2 ~ log_biom_1  + trt + (1|block)+ (1|startyear), data= data_i), 
+        lmer(log_biom_2 ~ log_biom_1  + trt + (1|block)+ (1|startyear), data= data_i), 
         silent=TRUE)
       if (class(gr[[i]])[1]== "try-error" || lme4::isSingular(gr[[i]])) { # if the most-complex model is a try-error, is singular or DN converge
-        gr[[i]] <- try(lme4::glmer(log_biom_2 ~ log_biom_1 + trt  + block + (1|startyear), data= data_i), silent= TRUE) # then fit a simpler model
+        gr[[i]] <- try(lme4::lmer(log_biom_2 ~ log_biom_1 + trt  + block + (1|startyear), data= data_i), silent= TRUE) # then fit a simpler model
         if (class(gr[[i]])[1] == "try-error" || lme4::isSingular(gr[[i]])) {  # if that model is singular or DN converge
-          gr[[i]] <- try(glm(log_biom_1 ~ log_biom_2 + trt  + block + startyear, data= data_i), silent=TRUE)
+          gr[[i]] <- try(glm(log_biom_2 ~ log_biom_1 + trt  + block + startyear, data= data_i), silent=TRUE)
           if (class(gr[[i]])[1] == "try-error") {print(paste("species", i, "gr DN converge- trt only"))}}}
       
       # prob of fruiting    
@@ -125,12 +127,14 @@ for (i in 1:3){
           if (class(pf[[i]])[1] == "try-error") {print(paste("species", i, "pf DN converge- trt only"))}}}
       
       # number of fruits
-      cf[[i]] <- try(glmer(log_cf_2 ~ log_biom_1 + trt + (1|block)+ (1|startyear), data= data_i)  , silent=TRUE) 
+      cf[[i]] <- try(lmer(log_cf_2 ~ log_biom_1 + trt + (1|block)+ (1|startyear), data= data_i)  , silent=TRUE) 
       if (class(cf[[i]])[1]== "try-error" || lme4::isSingular(cf[[i]])) { # if the most-complex model is a try-error, is singular or DN converge
-        cf[[i]] <- try(lme4::glmer(log_cf_2 ~ log_biom_1 + trt  + block + (1|startyear), data= data_i), silent= TRUE) # then fit a simpler model
+        cf[[i]] <- try(lme4::lmer(log_cf_2 ~ log_biom_1 + trt  + block + (1|startyear), data= data_i), silent= TRUE) # then fit a simpler model
         if (class(cf[[i]])[1] == "try-error" || lme4::isSingular(cf[[i]])) {  # if that model is singular or DN converge
           cf[[i]] <- try(glm(log_cf_2 ~ log_biom_1 + trt  + block + startyear, data= data_i), silent=TRUE)
           if (class(cf[[i]])[1] == "try-error") {print(paste("species", i, "cf DN converge- trt only"))}}}    }
+  
+  sur[[i]]$xlevels
 print(i)}
 
 
@@ -141,7 +145,7 @@ data_i$watershed <- factor(data_i$watershed) %>% droplevels()
 data_i$bison <- factor(data_i$bison) %>% droplevels()
 data_i$small_mammal <- factor(data_i$small_mammal) %>% droplevels()
 data_i$invertebrates <- factor( data_i$invertebrates) %>% droplevels()
-data_i$trt<- factor(data_i$trt) %>% droplevels()
+data_i$trt <- factor(data_i$trt, levels= c("BSI", "XXX", "XXI", "XSX", "BSX", "XSI")) %>% droplevels()
 data_i$block <- factor(data_i$block) %>% droplevels()
 
 data_i$log_biom_1 <- log(data_i$biom_1)
@@ -159,26 +163,42 @@ contrasts_present <- data_i %>%
   summarise(n=sum(!is.na(sur_1_2)))
 
 
-pf[[i]] <- glm(prf_2 ~ log_biom_1 +  trt  + watershed + startyear, data= data_i, family= "binomial") # block will not converge due to ecan's patchy distribution & limited occurrence in N1A
-cf[[i]] <- glm(log_cf_2 ~ log_biom_1 + trt  + block + startyear, data= data_i) # ditto here-- watershed will not converge
+pf[[2]] <- glm(prf_2 ~ log_biom_1 +  trt  + watershed + startyear, data= data_i, family= "binomial") # block will not converge due to ecan's patchy distribution & limited occurrence in N1A
+cf[[2]] <- glm(log_cf_2 ~ log_biom_1 + trt  + block + startyear, data= data_i) # ditto here-- watershed will not converge
 
 
-mods <- list("A. canescens survival"= sur[[1]] , 
-             "A. canescens growth"= gr[[1]] , 
-             "A. canescens prob. rep."= pf[[1]] , 
-             "A. canescens amt. rep."= cf[[1]] , 
-             "E. angustifolia survival"= sur[[2]] , 
-             "E. angustifolia growth"= gr[[2]] , 
-             "E. angustifolia prob. rep."= pf[[2]] , 
-             "E. angustifolia amt. rep."= cf[[2]] , 
-             "B. eupatorioides survival"= sur[[2]] , 
-             "B. eupatorioides growth"= gr[[2]] , 
-             "B. eupatorioides prob. rep."= pf[[2]] , 
-             "B. eupatorioides amt. rep."= cf[[2]] )
+mods <- list("Survival"= sur[[1]] , # this xlevel only includes -B-S-I(ref), +B+S-I, and +B+S+I
+             "Growth"= gr[[1]] , # this xlevel only includes -B-S-I(ref), +B+S-I
+             "Prob. rep."= pf[[1]] , # this xlevel only includes -B-S-I(ref), +B+S-I
+             "Amt. rep."= cf[[1]] , # this xlevel only includes -B-S-I(ref), +B+S-I
+             "Survival"= sur[[2]] , # this xlevel is missing -B-S-I treatment, only has other 5 treatments
+             "Growth"= gr[[2]] , # this xlevel is missing -B-S-I treatment
+             "Prob. rep."= pf[[2]] , # this xlevel is missing -B-S-I treatment
+             "Amt. rep."= cf[[2]] , # this xlevel is missing -B-S-I, -B+S-I treatments
+             "Survival"= sur[[3]] , 
+             "Growth"= gr[[3]] , 
+             "Prob. rep."= pf[[3]] , 
+             "Amt. rep."= cf[[3]] )
 
-texreg::wordreg(mods, digits=3, stars=numeric(0) ,custom.coef.map = list(
+texreg::wordreg(mods, digits=2, stars=0.05 , 
+ custom.coef.map = list(
   "(Intercept)" = "Intercept", 
-  "GrowthFormW" = "Woody growth form"),
-  custom.gof.rows = list("No. obs."= lapply(mods, nobs)
+  "log_biom_1" = "Initial size",
+  "trtXXI"= "Treatment (-B-S+I)",
+  "trtXSX"= "Treatment (-B+S-I)",
+  "trtBSX"= "Treatment (+B+S-I)",
+  "trtXSI"= "Treatment (-B+S+I)",
+  "trtBSI"= "Treatment (+B+S+I)",
+  "watershedN4B" = "4-year burn",
+  "watershedN4B:trtXXI"= "4-year burn x treatment (-B-S+I)",
+  "watershedN4B:trtXSX"= "4-year burn x treatment (-B+S-I)",
+  "watershedN4B:trtBSX"= "4-year burn x treatment (+B+S-I)",
+  "watershedN4B:trtXSI"= "4-year burn x treatment (-B+S+I)",
+  "watershedN4B:trtBSI"= "4-year burn x treatment (+B+S+I)"
+ ),
+  custom.gof.rows = list("No. obs."= as.numeric(unlist(lapply(mods, nobs)))
   ), # add row for AICc weight & no obs,
-  file = "data/06_all_demo_rates.docx")
+  custom.header= list("A. canescens" = 1:4,"E. angustifolia" = 5:8,"B. eupatorioides" = 9:12 ), # this custom header isn't woring
+  file = "derived_data/06_all_demo_rates.docx")
+
+warning("you must add Reference condition by hand to the first trmt in E. angustifolia's models & the custom.header")

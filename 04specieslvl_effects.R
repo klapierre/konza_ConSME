@@ -98,8 +98,8 @@ if (dim(data_i[which(data_i$max_cover >0), ])[1]<10){
   } else {
 # NB for consistency with Kims analysis I am regressing cover (not change in cover!) against predictors
 # and using her same error structure
-    data_i$trt <- as.factor(data_i$trt)
-  data_i$trt <- relevel(data_i$trt, ref= "XXX")
+    
+    data_i$trt<- factor(data_i$trt, levels= c( "XXX", "XXI", "XSX", "BSX", "XSI", "BSI")) %>% droplevels()
   data_i$ year <- as.factor(data_i$year)
   data_i$ block <- as.factor(data_i$block)
   options (warn=2) # converts warnings to errors in code below
@@ -225,8 +225,24 @@ for (i in 1:length(coef_names)){
   
   }
 
-write.csv(coef_names, file= "04_coef_sig_sign_summary.csv")
-write.csv(which_sig, file= "04_coef_sig_species_names.csv")
-write.csv(which_sig_pos, file= "04_coef_sig_pos_species_names.csv")
+species_names <- dimnames(coefficients_allsp)[[1]]
+species_summary <- as.data.frame((species_names))
+species_summary$no.sig <- NA
 
+for (i in 1:length(species_list)){
+  if (all(is.na(coefficients_allsp[i,"P-val",]))) { # if all the p-vals are NA, that means that species model wasn't fit
+    species_summary$no.sig[i] <- NA} else {
+      species_summary$no.sig[i] <-  sum(coefficients_allsp[i,"P-val", 3:12]<=0.05, na.rm=TRUE) # how many sig trmt effects did that species have?
+    } }
+species_summary$any.sig <- NA
+species_summary$any.sig[which(species_summary$no.sig>0)] <- 1
+species_summary$any.sig[which(species_summary$no.sig==0)] <- 0
+sum(species_summary$any.sig, na.rm=TRUE)
+
+
+
+write.csv(coef_summary,file= "derived_data/04_coef_sig_summary.csv" )
+write.csv(which_sig, file= "derived_data/04_coef_sig_species_names.csv")
+write.csv(which_sig_pos, file= "derived_data/04_coef_sig_pos_species_names.csv")
+write.csv(species_summary,file= "derived_data/04_species_sig_summary.csv" )
 # I think here, you want to say,look here is a table of how mamy species' densities were signficantly & positively affected by the coefficient. species'names are in the supp info
