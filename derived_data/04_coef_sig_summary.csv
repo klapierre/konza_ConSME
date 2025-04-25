@@ -1,10 +1,10 @@
 "","coef_names","no.sig","no.sig.pos"
-"1","watershedN4B",21,6
+"1","watershedN4B",22,6
 "2","trtBSI",25,8
-"3","trtBSX",33,16
+"3","trtBSX",32,15
 "4","trtXSI",15,4
 "5","trtXSX",18,4
-"6","trtXXI",23,6
+"6","trtXXI",24,6
 "7","watershedN4B:trtBSI",17,12
 "8","watershedN4B:trtBSX",14,10
 "9","watershedN4B:trtXSI",13,7

@@ -8,7 +8,7 @@
 "7","rosa_arkansana",0,0
 "8","symphoricarpos_orbiculatus",4,1
 "9","artemisia_ludoviciana",4,1
-"10","asclepias_viridis",0,0
+"10","asclepias_viridis",1,1
 "11","brickellia_eupatorioides",6,1
 "12","physalis_pumila",10,1
 "13","solidago_altissima",7,1
@@ -147,7 +147,7 @@
 "146","mirabilis_albida",NA,NA
 "147","setaria_viridis",NA,NA
 "148","asclepias_syriaca",NA,NA
-"149","calystegia_macounii",1,1
+"149","calystegia_macounii",0,0
 "150","cyperus_lupulinus",0,0
 "151","desmodium_perplexum",2,1
 "152","physalis_longifolia",NA,NA

@@ -216,12 +216,13 @@ for (i in 1:length(coef_names)){
   
   coef_summary$no.sig[i] <- length(which(coefficients_allsp[,"P-val", coef_names[i]] <= 0.05)) 
   names_sig_i <- names(which(coefficients_allsp[,"P-val", coef_names[i]] <= 0.05))
+  names_sig_neg_i <- names(which(coefficients_allsp[,"P-val", coef_names[i]] <= 0.05 & coefficients_allsp[,"coefficient", coef_names[i]]<0))
+  nos_sig_neg_i <- which(names_sig_i %in% names_sig_neg_i)
+  names_sig_i[nos_sig_neg_i] <- paste(names_sig_i[nos_sig_neg_i] , "*", sep= "") # adds an asterisk to those species whose coefficients are negative 
   names_sig_i <- sub("_", " ",names_sig_i )
   which_sig[1:length(names_sig_i),i] <- sort(stringr::str_to_sentence(names_sig_i))
   coef_summary$no.sig.pos[i] <- length(which(coefficients_allsp[,"P-val", coef_names[i]] <= 0.05 & coefficients_allsp[,"coefficient", coef_names[i]]>0))
-  names_sig_pos_i <- names(which(coefficients_allsp[,"P-val", coef_names[i]] <= 0.05 & coefficients_allsp[,"coefficient", coef_names[i]]>0))
-  names_sig_pos_i <- sub("_", " ",names_sig_pos_i )
-  which_sig_pos[1:length(names_sig_pos_i),i] <- sort(stringr::str_to_sentence(names_sig_pos_i))
+
   
   }
 
@@ -237,12 +238,26 @@ for (i in 1:length(species_list)){
 species_summary$any.sig <- NA
 species_summary$any.sig[which(species_summary$no.sig>0)] <- 1
 species_summary$any.sig[which(species_summary$no.sig==0)] <- 0
-sum(species_summary$any.sig, na.rm=TRUE)
-
 
 
 write.csv(coef_summary,file= "derived_data/04_coef_sig_summary.csv" )
-write.csv(which_sig, file= "derived_data/04_coef_sig_species_names.csv")
-write.csv(which_sig_pos, file= "derived_data/04_coef_sig_pos_species_names.csv")
+write.csv(which_sig, file= "derived_data/04_coef_sig_species_names.csv", na="")
 write.csv(species_summary,file= "derived_data/04_species_sig_summary.csv" )
-# I think here, you want to say,look here is a table of how mamy species' densities were signficantly & positively affected by the coefficient. species'names are in the supp info
+
+# summary statistics for paper---- 
+sum(species_summary$any.sig, na.rm=TRUE) # how many species had any significant treatment effects
+sig.species <- species_summary[which(species_summary$any.sig== 1),]
+sp_unique <- unique(spAll[, c("genus_species","family"   ,     "growthform"  ,  "lifeform"   ,   "origin"  )])
+sig.species <- left_join(sig.species, sp_unique, by= c("X.species_names."= "genus_species"))
+sig.species.summary <- sig.species %>% count(lifeform) # how many species had sig effects of each growth form
+nsig.species <- species_summary[which(species_summary$any.sig== 0),] # which species did NOT have sig effects-- given that we could fit a treatment effect
+nsig.species <- left_join(nsig.species, sp_unique, by= c("X.species_names."= "genus_species"))
+nsig.species.summary <- nsig.species %>% count(lifeform) # how many species had sig effects of each growth form
+cont.table <- left_join(nsig.species.summary, sig.species.summary, by= "lifeform")
+colnames(cont.table) <- c("lifeform", "no.nsig", "no.sig")
+rownames(cont.table) <- cont.table$lifeform
+cont.table$no.sig[which(is.na(cont.table$no.sig))] <- 0
+
+chisq.test(cont.table[,-1], simulate.p.value = TRUE)
+
+coef_summary
