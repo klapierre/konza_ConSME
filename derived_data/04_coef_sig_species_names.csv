@@ -1,36 +1,36 @@
 "","watershedN4B","trtBSI","trtBSX","trtXSI","trtXSX","trtXXI","watershedN4B:trtBSI","watershedN4B:trtBSX","watershedN4B:trtXSI","watershedN4B:trtXSX","watershedN4B:trtXXI"
-"1","Apocynum cannabinum","Ambrosia artemisiifolia","Acalypha virginica","Amorpha canescens*","Artemisia ludoviciana*","Amorpha canescens*","Bouteloua curtipendula","Bouteloua hirsuta","Artemisia ludoviciana*","Bouteloua hirsuta","Ambrosia psilostachya*"
-"2","Asclepias verticillata","Ambrosia psilostachya","Ambrosia artemisiifolia","Callirhoe involucrata","Brickellia eupatorioides*","Apocynum cannabinum","Bouteloua hirsuta","Carex meadii*","Bouteloua hirsuta","Brickellia eupatorioides","Apocynum cannabinum*"
-"3","Asclepias viridis*","Andropogon gerardii*","Ambrosia psilostachya","Carex inops*","Callirhoe involucrata","Asclepias verticillata","Carex austrina","Conyza canadensis","Carex brevior*","Carex brevior*","Asclepias verticillata*"
-"4","Brickellia eupatorioides*","Artemisia ludoviciana*","Amorpha canescens*","Dichanthelium oligosanthes*","Desmodium perplexum*","Asclepias viridis*","Carex inops","Dalea purpurea","Lespedeza violacea","Carex inops","Bouteloua hirsuta"
-"5","Carex austrina*","Bouteloua curtipendula","Andropogon gerardii*","Lespedeza capitata*","Oenothera speciosa*","Brickellia eupatorioides*","Carex meadii*","Eragrostis spectabilis","Panicum virgatum","Carex meadii*","Brickellia eupatorioides"
-"6","Carex inops*","Brickellia eupatorioides*","Artemisia ludoviciana*","Oxalis stricta*","Oxalis violacea*","Callirhoe involucrata","Croton monanthogynus*","Lespedeza capitata","Penstemon cobaea*","Lespedeza violacea","Carex brevior*"
-"7","Cirsium altissimum","Carex austrina*","Bouteloua curtipendula","Oxalis violacea*","Physalis pumila*","Carex austrina*","Dalea purpurea*","Physalis pumila","Physalis pumila","Physalis pumila","Croton monanthogynus*"
-"8","Desmodium perplexum*","Carex inops*","Brickellia eupatorioides*","Penstemon cobaea","Ruellia humilis*","Carex inops*","Lespedeza capitata","Ruellia humilis*","Ruellia humilis*","Schizachyrium scoparium","Lespedeza violacea"
-"9","Euphorbia nutans*","Carex meadii*","Carex inops*","Physalis pumila*","Schizachyrium scoparium*","Carex meadii*","Mimosa quadrivalvis*","Schizachyrium scoparium","Schizachyrium scoparium","Solidago altissima*","Physalis pumila"
-"10","Lepidium densiflorum*","Croton monanthogynus","Carex meadii*","Ratibida columnifera","Scutellaria parvula","Croton monanthogynus","Panicum virgatum","Solidago altissima*","Solidago altissima*","Solidago rigida*","Ruellia humilis*"
-"11","Lespedeza capitata*","Dalea purpurea","Dalea candida*","Rhus glabra","Solidago altissima","Dalea candida*","Physalis pumila","Sorghastrum nutans","Solidago missouriensis","Symphoricarpos orbiculatus","Schizachyrium scoparium"
-"12","Lespedeza violacea*","Lespedeza capitata*","Dalea purpurea*","Schizachyrium scoparium*","Solidago rigida","Oxalis stricta*","Solidago altissima*","Tragia betonicifolia*","Sporobolus compositus*","Symphyotrichum oblongifolium","Solidago altissima*"
-"13","Panicum virgatum*","Oxalis violacea*","Desmodium perplexum*","Spermolepis inermis*","Symphoricarpos orbiculatus*","Oxalis violacea*","Solidago missouriensis","Verbena stricta","Symphyotrichum oblongifolium","Vernonia baldwinii","Solidago rigida"
-"14","Penstemon cobaea","Panicum virgatum*","Euphorbia glyptosperma","Symphyotrichum ericoides*","Symphyotrichum ericoides*","Panicum virgatum*","Symphoricarpos orbiculatus","Vernonia baldwinii",,,"Sporobolus compositus*"
-"15","Physalis pumila*","Physalis pumila*","Euphorbia nutans","Vernonia baldwinii*","Tridens flavus*","Physalis pumila*","Symphyotrichum ericoides",,,,"Symphoricarpos orbiculatus"
-"16","Physalis virginiana*","Rhus glabra","Hedeoma hispida",,"Verbena stricta*","Physalis virginiana*","Verbena stricta",,,,"Symphyotrichum oblongifolium"
-"17","Rhus glabra*","Schizachyrium scoparium*","Hordeum pusillum",,"Vernonia baldwinii*","Schizachyrium scoparium*","Vernonia baldwinii",,,,"Verbena stricta"
-"18","Schedonnardus paniculatus*","Scutellaria parvula","Hymenopappus scabiosaeus",,"Viola nephrophylla*","Scutellaria parvula",,,,,
-"19","Sporobolus compositus","Solidago altissima*","Kummerowia stipulacea",,,"Solidago missouriensis",,,,,
-"20","Tragia betonicifolia","Solidago rigida","Oxalis violacea*",,,"Spermolepis inermis*",,,,,
-"21","Verbena stricta*","Sporobolus compositus*","Panicum virgatum*",,,"Symphyotrichum ericoides*",,,,,
-"22","Vernonia baldwinii*","Symphyotrichum ericoides*","Physalis pumila*",,,"Tridens flavus*",,,,,
-"23",,"Verbena stricta*","Ratibida columnifera",,,"Verbena stricta*",,,,,
-"24",,"Vernonia baldwinii*","Rhus glabra",,,"Viola nephrophylla*",,,,,
-"25",,"Viola nephrophylla*","Schizachyrium scoparium*",,,,,,,,
-"26",,,"Scutellaria parvula",,,,,,,,
-"27",,,"Solidago rigida",,,,,,,,
-"28",,,"Sorghastrum nutans*",,,,,,,,
-"29",,,"Symphyotrichum ericoides*",,,,,,,,
-"30",,,"Tragia betonicifolia",,,,,,,,
-"31",,,"Tridens flavus*",,,,,,,,
-"32",,,"Viola nephrophylla*",,,,,,,,
+"1","Amorpha canescens*","Ambrosia psilostachya","Ambrosia artemisiifolia","Carex inops*","Amorpha canescens","Amorpha canescens","Bouteloua curtipendula","Bouteloua hirsuta","Artemisia ludoviciana*","Bouteloua hirsuta","Ambrosia artemisiifolia*"
+"2","Brickellia eupatorioides*","Andropogon gerardii*","Ambrosia psilostachya","Dalea candida*","Artemisia ludoviciana*","Asclepias verticillata","Carex austrina","Carex meadii*","Bouteloua hirsuta","Brickellia eupatorioides","Ambrosia psilostachya*"
+"3","Carex austrina*","Artemisia ludoviciana*","Andropogon gerardii*","Dalea purpurea","Brickellia eupatorioides*","Brickellia eupatorioides*","Carex inops","Eragrostis spectabilis","Carex brevior*","Carex brevior*","Asclepias verticillata*"
+"4","Carex gravida*","Bouteloua curtipendula","Artemisia ludoviciana*","Dichanthelium oligosanthes*","Dalea candida*","Carex austrina*","Carex meadii*","Lespedeza capitata","Dalea purpurea*","Carex inops","Brickellia eupatorioides"
+"5","Carex inops*","Brickellia eupatorioides*","Bouteloua curtipendula","Echinacea angustifolia","Echinacea angustifolia","Carex inops*","Croton monanthogynus*","Physalis pumila","Lespedeza violacea","Carex meadii*","Carex brevior*"
+"6","Croton monanthogynus","Carex austrina*","Brickellia eupatorioides*","Lespedeza capitata*","Oxalis violacea*","Carex meadii*","Dalea purpurea*","Ruellia humilis*","Physalis pumila","Lespedeza violacea","Croton monanthogynus*"
+"7","Dalea candida*","Carex inops*","Carex gravida","Oxalis stricta*","Physalis pumila*","Croton monanthogynus","Lespedeza capitata","Schizachyrium scoparium","Ruellia humilis*","Physalis pumila","Lespedeza violacea"
+"8","Dalea multiflora*","Carex meadii*","Carex inops*","Oxalis violacea*","Ruellia humilis*","Dalea candida*","Panicum virgatum","Solidago altissima*","Schizachyrium scoparium","Schizachyrium scoparium","Physalis pumila"
+"9","Dalea purpurea","Croton monanthogynus","Carex meadii*","Physalis pumila*","Schizachyrium scoparium*","Echinacea angustifolia","Physalis pumila","Sorghastrum nutans","Solidago altissima*","Solidago altissima*","Ruellia humilis*"
+"10","Echinacea angustifolia","Dalea purpurea","Dalea candida*","Schizachyrium scoparium*","Scutellaria parvula","Mimosa quadrivalvis*","Solidago missouriensis","Verbena stricta","Solidago missouriensis","Solidago rigida*","Schizachyrium scoparium"
+"11","Euphorbia nutans*","Echinacea angustifolia","Echinacea angustifolia","Symphyotrichum ericoides*","Solidago altissima","Oxalis stricta*","Symphyotrichum ericoides","Vernonia baldwinii","Sporobolus compositus*","Vernonia baldwinii","Solidago altissima*"
+"12","Hybanthus verticillatus","Lespedeza capitata*","Euphorbia nutans","Tragia betonicifolia*","Solidago rigida","Oxalis violacea*","Verbena stricta",,,,"Solidago rigida"
+"13","Lepidium densiflorum*","Oxalis violacea*","Oxalis violacea*","Vernonia baldwinii*","Symphoricarpos orbiculatus","Physalis pumila*","Vernonia baldwinii",,,,"Sporobolus compositus*"
+"14","Lespedeza capitata*","Panicum virgatum*","Panicum virgatum*",,"Symphyotrichum ericoides*","Schizachyrium scoparium*",,,,,"Verbena stricta"
+"15","Lespedeza violacea*","Physalis pumila*","Physalis pumila*",,"Verbena stricta*","Scutellaria parvula",,,,,
+"16","Mimosa quadrivalvis","Rhus glabra","Ratibida columnifera",,"Vernonia baldwinii*","Solidago missouriensis",,,,,
+"17","Penstemon cobaea","Schizachyrium scoparium*","Schizachyrium scoparium*",,,"Symphyotrichum ericoides*",,,,,
+"18","Physalis pumila*","Scutellaria parvula","Scutellaria parvula",,,"Tragia betonicifolia*",,,,,
+"19","Plantago rhodosperma*","Sporobolus compositus*","Solidago rigida",,,"Verbena stricta*",,,,,
+"20","Rhus glabra*","Symphyotrichum ericoides*","Sorghastrum nutans*",,,,,,,,
+"21","Ruellia humilis","Tragia betonicifolia*","Symphyotrichum ericoides*",,,,,,,,
+"22","Sporobolus compositus","Verbena stricta*","Symphyotrichum oblongifolium",,,,,,,,
+"23","Symphoricarpos orbiculatus","Vernonia baldwinii*",,,,,,,,,
+"24","Symphyotrichum oblongifolium",,,,,,,,,,
+"25","Tragia betonicifolia",,,,,,,,,,
+"26","Verbena stricta*",,,,,,,,,,
+"27","Vernonia baldwinii*",,,,,,,,,,
+"28",,,,,,,,,,,
+"29",,,,,,,,,,,
+"30",,,,,,,,,,,
+"31",,,,,,,,,,,
+"32",,,,,,,,,,,
 "33",,,,,,,,,,,
 "34",,,,,,,,,,,
 "35",,,,,,,,,,,
