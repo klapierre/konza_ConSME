@@ -178,17 +178,17 @@ for ( ii in 1: length(unique_plant_ids)){ # cycles through all the individual pl
     }}
 }
 # need to make the final year of data, which is currently unfinished. including this last year becomes important when calculating recruitment later
-my_colnames <- c("plant_id",sp_measurements[[i]], "note", "cov", "alive_startyear")
+my_colnames <- c("plant_id",sp_measurements[[i]], "comm", "note", "cov", "alive_startyear")
 endingyear <- data.frame(matrix(nrow=0, ncol=length(my_colnames)))
 colnames(endingyear) <- my_colnames
 endingyear$plant_id <- as.character(endingyear$plant_id)
 if (i == 1) {i_data_20$cov <- NA}
 i_data_transition1 <- dplyr::full_join(i_data_20,
-                                          i_data_21[,c("plant_id", sp_measurements[[i]], "note", "cov", "alive_startyear")], by= c("plant_id")) 
+                                          i_data_21[,c("plant_id", sp_measurements[[i]], "comm", "note", "cov", "alive_startyear")], by= c("plant_id")) 
 i_data_transition2 <- dplyr::full_join(i_data_21, 
-                                          i_data_22[,c("plant_id", sp_measurements[[i]], "note", "cov", "alive_startyear")], by= c("plant_id")) 
+                                          i_data_22[,c("plant_id", sp_measurements[[i]], "comm", "note", "cov", "alive_startyear")], by= c("plant_id")) 
 i_data_transition3 <- dplyr::full_join(i_data_22,
-                                          i_data_23[,c("plant_id", sp_measurements[[i]], "note", "cov", "alive_startyear")], by= c("plant_id")) 
+                                          i_data_23[,c("plant_id", sp_measurements[[i]], "comm", "note", "cov", "alive_startyear")], by= c("plant_id")) 
 i_data_transition4 <- dplyr::full_join(i_data_23,
                                           endingyear, by= c("plant_id")) 
 
@@ -215,9 +215,9 @@ for (i in 1:dim(kueu_data)[1]){
   kueu_data$f_2[i] <-  sum(Numextract(kueu_data$f.y[i]))
 }
 kueu_data <- kueu_data[, c( "block", "plot","x","y", "plant_id" , "startyear" ,  "biom_1"   ,
-                            "biom_2" ,   "f_1"   ,    "f_2"   ,"cov.x" ,    "cov.y" , "alive_startyear.x", "alive_startyear.y" )]
+                            "biom_2" , "comm.y",   "f_1"   ,    "f_2"   ,"cov.x" ,    "cov.y" , "alive_startyear.x", "alive_startyear.y" )]
 names(kueu_data) <- c( "block", "plot","x","y",  "plant_id" , "startyear" ,  "biom_1"   ,
-                       "biom_2" ,   "f_1"   ,    "f_2"   ,"cov_1" ,    "cov_2", "alive_1", "alive_2")
+                       "biom_2" ,  "comm_2",  "f_1"   ,    "f_2"   ,"cov_1" ,    "cov_2", "alive_1", "alive_2")
 
 ecan_data$biom_1 <- ecan_data$biom_2 <- ecan_data$f_1 <- ecan_data$f_2 <- NA
 
@@ -239,9 +239,9 @@ for (i in 1:dim(ecan_data)[1]){
   rm(biom_ros1, biom_f1, biom_ros2, biom_f2)
 }
 ecan_data <- ecan_data[, c( "block", "plot","x","y",   "plant_id" , "startyear" ,  "biom_1"   ,
-                            "biom_2" ,   "f_1"   ,    "f_2"   ,"cov.x" ,    "cov.y" , "alive_startyear.x" , "alive_startyear.y")]
+                            "biom_2" , "comm.y",   "f_1"   ,    "f_2"   ,"cov.x" ,    "cov.y" , "alive_startyear.x" , "alive_startyear.y")]
 names(ecan_data) <- c( "block", "plot","x","y",  "plant_id" , "startyear" ,  "biom_1"   ,
-                       "biom_2" ,   "f_1"   ,    "f_2"   ,"cov_1" ,    "cov_2", "alive_1", "alive_2"  )
+                       "biom_2" , "comm_2",   "f_1"   ,    "f_2"   ,"cov_1" ,    "cov_2", "alive_1", "alive_2"  )
 
 #amca
 # best measurement of biomass is h*s (r^2= 0.65), but you didn't measure h the first year
@@ -257,9 +257,9 @@ for (i in 1:dim(amca_data)[1]){
   amca_data$f_2[i] <- sum(Numextract(amca_data$l_f.y[i]))
 }
 amca_data <- amca_data[, c( "block", "plot","x","y",   "plant_id" , "startyear" ,  "biom_1"   ,
-                            "biom_2" ,   "f_1"   ,    "f_2"  ,"cov.x" ,    "cov.y" , "alive_startyear.x" , "alive_startyear.y")]
+                            "biom_2" ,"comm.y",    "f_1"   ,    "f_2"  ,"cov.x" ,    "cov.y" , "alive_startyear.x" , "alive_startyear.y")]
 names(amca_data) <- c( "block", "plot","x","y",   "plant_id" , "startyear" ,  "biom_1"   ,
-                       "biom_2" ,   "f_1"   ,    "f_2"   ,"cov_1" ,    "cov_2" ,"alive_1", "alive_2")
+                       "biom_2" , "comm_2",   "f_1"   ,    "f_2"   ,"cov_1" ,    "cov_2" ,"alive_1", "alive_2")
 
 # doing some final touches here
 amca_data$sur_1_2 <- NA
@@ -303,4 +303,47 @@ write.csv(amca_data,file= "derived_data/05_amca_clean_demo_data.RData")
 write.csv(ecan_data,file= "derived_data/05_ecan_clean_demo_data.RData")
 write.csv(kueu_data,file= "derived_data/05_kueu_clean_demo_data.RData")
 
+# recruitment----
+# you want the code to search comm_2 for "qns" or "qs"
+# if qns, return NA for recruitment counts
+# if qs: 
+  # sum all the reproductive effort between x = 100-200 and y= 100-200 for f_1
+  # count all the plants that contain "new" in comm_2 but do not contain "no new" 
+for (j in 1:3){
+  
+j_data <- get(paste(sp_name[j], "_data", sep= ""))
+#if QNS: 
+j_rec_data <- j_data[which(grepl("qns",j_data$comm_2 )),c("block", "plot", "startyear")]
+j_rec_data$f_1 <- j_rec_data$rec_2 <- NA
+
+# if QS: 
+qses <- j_data[which(grepl("qs",j_data$comm_2 )),c("block", "plot", "startyear")] # here, startyear is year 1-- the year the fruiting occurred
+qses$f_1 <- qses$rec_2 <- NA
+for (i in 1:dim(qses)[1]){
+  
+  block_i <- qses$block[i]
+  plot_i <- qses$plot[i]
+  startyear_i <- qses$startyear[i]
+  
+  qses$f_1[i] <- sum(j_data$f_1[which(
+    j_data$block == block_i & j_data$plot == plot_i & j_data$startyear == startyear_i & #same block, plot, year
+      j_data$x >= 100 & j_data$x <= 200 & # x bounds
+      j_data$x >= 100 & j_data$x <= 200)], # y bounds
+    na.rm=TRUE)
+   qses$rec_2[i]  <- dim(j_data[
+     which( grepl("new", j_data$comm_2) & !grepl("no new", j_data$comm_2) & # counts number of new plants
+     j_data$block == block_i & j_data$plot == plot_i & j_data$startyear == startyear_i & #same block, plot, year
+       j_data$x >= 100 & j_data$x <= 200 & # x bounds
+       j_data$x >= 100 & j_data$x <= 200), # y bounds
+     ])[1] #gives you the count
+                   
+ 
+}
+assign(paste(sp_name[j], "_rec", sep= ""),
+       rbind.data.frame(j_rec_data, qses))
+}
+
+write.csv(amca_rec,file= "derived_data/05_amca_clean_rec_data.RData")
+write.csv(ecan_rec,file= "derived_data/05_ecan_clean_rec_data.RData")
+write.csv(kueu_rec,file= "derived_data/05_kueu_clean_rec_data.RData")
 
